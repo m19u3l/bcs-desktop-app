@@ -1,0 +1,17 @@
+# BCS DESKTOP APP - WORKING VERSION
+========================
+RECOVERED: November 30, 2025
+FROM: DMG sent to Alex on Nov 16
+
+THIS IS THE COMPLETE WORKING VERSION WITH:
+- 2,020 price list items
+- 42 clients
+- 11 invoices
+- Twilio SMS configured
+- Square payments configured
+- IONOS email configured
+
+DO NOT DELETE THIS FOLDER!
+
+Location: /Users/k4n3/bcs-desktop-app
+

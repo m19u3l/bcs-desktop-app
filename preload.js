@@ -6,6 +6,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App information
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getAppPath: (name) => ipcRenderer.invoke('get-app-path', name),
+  runCommand: (text) => ipcRenderer.invoke('run-command', text),
+  saveAudio: (buffer) => ipcRenderer.invoke('save-audio-blob', buffer),
+  transcribeAudio: (path) => ipcRenderer.invoke('transcribe-audio', path),
 
   // Window controls
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),

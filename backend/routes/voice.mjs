@@ -1,0 +1,5 @@
+import express from "express";
+import twilio from "twilio";
+const router = express.Router();
+const VoiceResponse = twilio.twiml.VoiceResponse;
+router.post("/incoming",(req,res)=>{const t=new VoiceResponse();const g=t.gather({numDigits:1,action:"/api/voice/menu",timeout:10});g.say({voice:"Polly.Joanna"},"Thank you for calling Building Care Solutions. For appointments press 1. Emergencies press 2. Insurance press 3. Speak with us press 0.");t.dial(process.env.OWNER_CELL);res.type("text/xml");res.send(t.toString());});router.post("/menu",(req,res)=>{const t=new VoiceResponse();const d=req.body.Digits;const m={"1":"Connecting you for your appointment.","2":"Emergency! Connecting immediately.","3":"Connecting to claims coordinator.","0":"Connecting now, please hold."};if(m[d]){t.say({voice:"Polly.Joanna"},m[d]);t.dial(process.env.OWNER_CELL);}else{t.say({voice:"Polly.Joanna"},"Invalid selection.");t.hangup();}res.type("text/xml");res.send(t.toString());});export default router;

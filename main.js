@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true });
 const { spawn } = require('child_process');
+const { handleUserCommand } = require('./src/actionHandler');
 
 let mainWindow;
 let backendProcess;
@@ -97,7 +99,51 @@ app.on('before-quit', () => {
   stopBackendServer();
 });
 
+const { exec } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+
+// --- WHISPER & AUDIO IPC ---
+ipcMain.handle('transcribe-audio', async (event, audioPath) => {
+  return new Promise((resolve) => {
+    const scriptPath = path.join(__dirname, 'src', 'whisper_transcribe.py');
+    const pythonPath = '/opt/homebrew/bin/python3'; // Absolute path for stability
+    
+    exec(`"${pythonPath}" "${scriptPath}" "${audioPath}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`❌ Whisper Exec Error: ${error.message}`);
+        return resolve({ error: error.message });
+      }
+      
+      if (stderr && !stderr.includes('numba')) {
+        console.warn(`⚠️ Whisper Stderr: ${stderr}`);
+      }
+
+      try {
+        // Find the last line that looks like JSON in case of chatter
+        const lines = stdout.trim().split('\n');
+        const lastLine = lines[lines.length - 1];
+        const result = JSON.parse(lastLine);
+        resolve(result);
+      } catch (e) {
+        console.error(`❌ Failed to parse Whisper output: "${stdout}"`);
+        resolve({ error: "Failed to parse Whisper output" });
+      }
+    });
+  });
+});
+
+ipcMain.handle('save-audio-blob', async (event, buffer) => {
+  const tempPath = path.join(os.tmpdir(), `bcs_audio_${Date.now()}.webm`);
+  fs.writeFileSync(tempPath, Buffer.from(buffer));
+  return tempPath;
+});
+
 // IPC handlers for renderer process communication
+ipcMain.handle('run-command', async (event, text) => {
+  return await handleUserCommand(text);
+});
+
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });

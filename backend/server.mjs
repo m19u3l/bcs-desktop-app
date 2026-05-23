@@ -3,8 +3,12 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { initializeDatabase } from './init-db.mjs';
 
-dotenv.config();
+dotenv.config({ path: new URL('.env', import.meta.url).pathname });
+
+// Initialize database before starting server
+await initializeDatabase();
 
 // Import route modules
 import clientsRouter from './routes/clients.mjs';
@@ -19,6 +23,7 @@ import changeOrdersRouter from './routes/change-orders.mjs';
 import dashboardRouter from './routes/dashboard.mjs';
 import dryOutJobsRouter from './routes/dry-out-jobs.mjs';
 import smsRouter from './routes/sms.mjs';
+import voiceRouter from './routes/voice.mjs';
 import jobTrackingRouter from './routes/job-tracking.mjs';
 import lineItemsRouter from './routes/line_items.mjs';
 import priceListRouter from './routes/price-list.mjs';
@@ -51,6 +56,11 @@ import documentTemplatesRouter from './routes/document-templates.mjs';
 import mediaRouter from './routes/media.mjs';
 import categoriesRouter from './routes/categories.mjs';
 import priceListMasterRouter from './routes/price-list-master.mjs';
+import loggingUtilityRouter from './routes/logging-utility.mjs';
+import aiRouter from './routes/ai.mjs';
+import competitorPricingRouter from './routes/competitor-pricing.mjs';
+import rsMeansRouter from './routes/rsmeans.mjs';
+import companiesRouter from './routes/companies.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,8 +69,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
@@ -87,6 +104,7 @@ app.use('/api/materials', materialsRouter);
 app.use('/api/vendors', vendorsRouter);
 app.use('/api/estimates', estimatesRouter);
 app.use('/api/sms', smsRouter);
+app.use('/api/voice', voiceRouter);
 app.use('/api/change-orders', changeOrdersRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/dry-out-jobs', dryOutJobsRouter);
@@ -121,6 +139,11 @@ app.use('/api/document-templates', documentTemplatesRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/price-list-master', priceListMasterRouter);
+app.use('/api/logging-utility', loggingUtilityRouter);
+app.use('/api/ai', aiRouter);
+app.use('/api/competitor-pricing', competitorPricingRouter);
+app.use('/api/rsmeans', rsMeansRouter);
+app.use('/api/companies', companiesRouter);
 
 // Start server
 app.listen(PORT, () => {

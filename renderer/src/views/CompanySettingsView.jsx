@@ -9,7 +9,9 @@ const CompanySettingsView = () => {
   const [formData, setFormData] = useState({
     company_name: '',
     business_name: '',
+    slogan: '',
     logo_url: '',
+    sidebar_icon_url: '',
     address_line1: '',
     address_line2: '',
     city: '',
@@ -24,6 +26,7 @@ const CompanySettingsView = () => {
     invoices_legal_disclaimer: '',
     payment_terms: '',
     warranty_text: '',
+    square_app_id: '',
     square_access_token: '',
     square_location_id: '',
     stripe_api_key: '',
@@ -115,13 +118,118 @@ const CompanySettingsView = () => {
               onChange={handleChange}
               placeholder="Doing Business As..."
             />
-            <Input
-              label="Logo URL"
-              name="logo_url"
-              value={formData.logo_url || ''}
-              onChange={handleChange}
-              placeholder="https://example.com/logo.png"
-            />
+            <div className="col-span-2">
+              <Input
+                label="Company Slogan"
+                name="slogan"
+                value={formData.slogan || ''}
+                onChange={handleChange}
+                placeholder="We Take the Stress Out of Restoration"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Logo Settings */}
+        <Card title="Logo & Branding Images">
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Main Logo (Dashboard Header)</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                {formData.logo_url ? (
+                  <div className="space-y-3">
+                    <img src={formData.logo_url} alt="Logo Preview" className="h-24 mx-auto object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, logo_url: '' }))}
+                      className="text-red-600 text-sm hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-4xl">🖼️</span>
+                    <p className="text-sm text-gray-500 mt-2">Upload logo image</p>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData(prev => ({ ...prev, logo_url: event.target.result }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="mt-3 text-sm"
+                />
+              </div>
+              <Input
+                label="Or enter URL"
+                name="logo_url"
+                value={formData.logo_url || ''}
+                onChange={handleChange}
+                placeholder="https://example.com/logo.png"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Sidebar Icon (BCS Button)</label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                {formData.sidebar_icon_url ? (
+                  <div className="space-y-3">
+                    <img src={formData.sidebar_icon_url} alt="Icon Preview" className="h-16 w-16 mx-auto object-contain rounded-full" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, sidebar_icon_url: '' }))}
+                      className="text-red-600 text-sm hover:text-red-800"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-4xl">👤</span>
+                    <p className="text-sm text-gray-500 mt-2">Upload sidebar icon</p>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData(prev => ({ ...prev, sidebar_icon_url: event.target.result }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="mt-3 text-sm"
+                />
+              </div>
+              <Input
+                label="Or enter URL"
+                name="sidebar_icon_url"
+                value={formData.sidebar_icon_url || ''}
+                onChange={handleChange}
+                placeholder="https://example.com/icon.png"
+                className="mt-2"
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Contact Information */}
+        <Card title="Contact Information">
+          <div className="grid grid-cols-2 gap-4">
             <Input
               label="Website"
               name="website"
@@ -251,12 +359,11 @@ const CompanySettingsView = () => {
               </h3>
               <div className="grid grid-cols-2 gap-4 pl-8">
                 <Input
-                  label="Square Access Token"
-                  name="square_access_token"
-                  type="password"
-                  value={formData.square_access_token || ''}
+                  label="Square App ID"
+                  name="square_app_id"
+                  value={formData.square_app_id || ''}
                   onChange={handleChange}
-                  placeholder="EAAAxxxxxxxxxxxxxxxx"
+                  placeholder="sandbox-sq0idb-xxxxxxxx"
                 />
                 <Input
                   label="Square Location ID"
@@ -265,6 +372,16 @@ const CompanySettingsView = () => {
                   onChange={handleChange}
                   placeholder="LXXXXXXXXXXXXXXX"
                 />
+                <div className="col-span-2">
+                  <Input
+                    label="Square Access Token"
+                    name="square_access_token"
+                    type="password"
+                    value={formData.square_access_token || ''}
+                    onChange={handleChange}
+                    placeholder="EAAAxxxxxxxxxxxxxxxx"
+                  />
+                </div>
               </div>
               <p className="text-sm text-gray-600 mt-2 pl-8">
                 Get your credentials from: <a href="https://developer.squareup.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Square Developer Dashboard</a>

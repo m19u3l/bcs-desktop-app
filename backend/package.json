@@ -9,12 +9,13 @@
     "dev": "nodemon server.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "html-pdf-node": "^1.0.8",
     "imap": "^0.8.19",
     "jsonwebtoken": "^9.0.2",

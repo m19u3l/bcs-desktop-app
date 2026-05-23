@@ -35,14 +35,14 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const data = req.body;
-    const fields = ['name', 'description', 'category', 'base_price'];
-    const values = fields.map(f => data[f]);
-    
+    const fields = ['name', 'description', 'category', 'unit_price', 'unit_type', 'taxable', 'active'];
+    const values = fields.map(f => data[f] !== undefined ? data[f] : null);
+
     const result = await db.run(
-      `INSERT INTO services (${fields.join(', ')}) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO services (${fields.join(', ')}) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       values
     );
-    
+
     const newItem = await db.get('SELECT * FROM services WHERE id = ?', [result.lastID]);
     res.status(201).json(newItem);
   } catch (error) {
@@ -56,15 +56,15 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const fields = ['name', 'description', 'category', 'base_price'];
-    const values = fields.map(f => data[f]);
+    const fields = ['name', 'description', 'category', 'unit_price', 'unit_type', 'taxable', 'active'];
+    const values = fields.map(f => data[f] !== undefined ? data[f] : null);
     values.push(id);
-    
+
     await db.run(
-      `UPDATE services SET name = ?, description = ?, category = ?, base_price = ? WHERE id = ?`,
+      `UPDATE services SET name = ?, description = ?, category = ?, unit_price = ?, unit_type = ?, taxable = ?, active = ? WHERE id = ?`,
       values
     );
-    
+
     const updatedItem = await db.get('SELECT * FROM services WHERE id = ?', [id]);
     res.json(updatedItem);
   } catch (error) {

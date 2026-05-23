@@ -405,8 +405,12 @@ export default function ModernDashboardView({ onNavigate }) {
     <div className="modern-dashboard-container">
       <div className="dashboard-header">
         <h1>📊 Building Care Solutions Dashboard</h1>
-        <button className="btn-refresh" onClick={loadDashboardData}>
-          🔄 Refresh
+        <button
+          className="btn-refresh-small"
+          onClick={loadDashboardData}
+          title="Refresh dashboard"
+        >
+          ↻
         </button>
       </div>
 

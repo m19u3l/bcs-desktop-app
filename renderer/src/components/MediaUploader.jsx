@@ -6,9 +6,12 @@ import { Upload, X, Image, Video, File, CheckCircle } from 'lucide-react';
  * Supports photos, videos, and documents
  * Miguel - m19u3l@sd-bcs.com
  */
-const MediaUploader = ({ onUpload, maxFiles = 10, acceptedTypes = 'image/*,video/*,.pdf' }) => {
+const MediaUploader = ({ onUpload, maxFiles = 10, acceptedTypes = 'image/*,video/*,.pdf', projects = [] }) => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [showDestinationModal, setShowDestinationModal] = useState(false);
+  const [selectedDestination, setSelectedDestination] = useState('general');
+  const [selectedProject, setSelectedProject] = useState('');
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
@@ -36,14 +39,25 @@ const MediaUploader = ({ onUpload, maxFiles = 10, acceptedTypes = 'image/*,video
     setFiles(files.filter(f => f.id !== id));
   };
 
-  const handleUpload = async () => {
+  const handleUploadClick = () => {
     if (files.length === 0) {
       alert('Please select files to upload');
       return;
     }
+    setShowDestinationModal(true);
+  };
 
+  const handleUpload = async () => {
+    setShowDestinationModal(false);
     setUploading(true);
     try {
+      // Prepare upload data with destination
+      const uploadData = {
+        files: files,
+        destination: selectedDestination,
+        projectId: selectedDestination === 'project' ? selectedProject : null
+      };
+
       // Simulate upload - replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -51,10 +65,18 @@ const MediaUploader = ({ onUpload, maxFiles = 10, acceptedTypes = 'image/*,video
       setFiles(updatedFiles);
 
       if (onUpload) {
-        onUpload(updatedFiles);
+        onUpload(updatedFiles, uploadData.destination, uploadData.projectId);
       }
 
-      alert('✅ Files uploaded successfully!');
+      const destName = selectedDestination === 'project'
+        ? `Project ${selectedProject}`
+        : 'General Storage';
+      alert(`Files uploaded to ${destName} successfully!`);
+
+      // Reset state
+      setFiles([]);
+      setSelectedDestination('general');
+      setSelectedProject('');
     } catch (error) {
       console.error('Upload error:', error);
       alert('Error uploading files');
@@ -143,13 +165,97 @@ const MediaUploader = ({ onUpload, maxFiles = 10, acceptedTypes = 'image/*,video
           ))}
 
           <button
-            onClick={handleUpload}
+            onClick={handleUploadClick}
             disabled={uploading}
             className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Upload size={20} />
             <span>{uploading ? 'Uploading...' : 'Upload All Files'}</span>
           </button>
+        </div>
+      )}
+
+      {/* Destination Selection Modal */}
+      {showDestinationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              Where would you like to save these files?
+            </h3>
+
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="destination"
+                  value="general"
+                  checked={selectedDestination === 'general'}
+                  onChange={(e) => setSelectedDestination(e.target.value)}
+                  className="mr-3"
+                />
+                <div>
+                  <p className="font-medium text-gray-800">General Storage</p>
+                  <p className="text-sm text-gray-500">For management review</p>
+                </div>
+              </label>
+
+              <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="destination"
+                  value="project"
+                  checked={selectedDestination === 'project'}
+                  onChange={(e) => setSelectedDestination(e.target.value)}
+                  className="mr-3"
+                />
+                <div>
+                  <p className="font-medium text-gray-800">Specific Project</p>
+                  <p className="text-sm text-gray-500">Attach to a work order or job</p>
+                </div>
+              </label>
+
+              {selectedDestination === 'project' && (
+                <div className="ml-6 mt-2">
+                  <select
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a project...</option>
+                    {projects.length > 0 ? (
+                      projects.map(project => (
+                        <option key={project.id} value={project.id}>
+                          {project.name || project.work_order_number}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="wo-001">WO-001 - Water Damage Restoration</option>
+                        <option value="wo-002">WO-002 - Fire Damage Cleanup</option>
+                        <option value="wo-003">WO-003 - Mold Remediation</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDestinationModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={selectedDestination === 'project' && !selectedProject}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Upload Files
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

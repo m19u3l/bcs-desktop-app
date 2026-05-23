@@ -661,6 +661,45 @@ export default function ImprovedDashboardView({ onNavigate }) {
           </div>
         </div>
       </div>
+
+      {/* ============================================================================ */}
+      {/* BIDIRECTIONAL ACTIONS OVERLAY POPUP MODAL CONTROL ENGINE                     */}
+      {/* ============================================================================ */}
+      {showDocPromptModal && selectedClientForDoc && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
+            <h3 className="text-xl font-black text-gray-900 mb-1">Document Dispatch Hub</h3>
+            <p className="text-sm text-gray-500 mb-4">Select the operational wrapper target for <strong className="text-gray-800">{selectedClientForDoc.name}</strong>. Demographic tokens populate automatically.</p>
+            
+            <div className="flex flex-col gap-2">
+              <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all"
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('estimates'); }}>
+                <span className="block font-bold text-blue-800">📄 Initialize Interactive Estimate / Quote</span>
+                <span className="block text-xs text-blue-600 mt-0.5">Launches design scope sheets pre-filled with client contact records.</span>
+              </button>
+
+              <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-all"
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('invoices'); }}>
+                <span className="block font-bold text-green-800">💰 Generate Reconciled Pro-Rata Invoice</span>
+                <span className="block text-xs text-green-600 mt-0.5">Executes math engines to scale line totals while burying markups.</span>
+              </button>
+
+              <button className="w-full text-left p-3 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg transition-all"
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('work-orders'); }}>
+                <span className="block font-bold text-cyan-800">👷 Dispatch Field Operations Work Order</span>
+                <span className="block text-xs text-cyan-600 mt-0.5">Generates crew labor windows with all financial costs hidden.</span>
+              </button>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end">
+              <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors" onClick={() => setShowDocPromptModal(false)}>
+                Cancel Actions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
