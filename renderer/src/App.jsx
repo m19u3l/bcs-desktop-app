@@ -155,7 +155,6 @@ function App() {
     { id: 'vendors', label: 'Vendors', icon: '🏢', help: 'Manage supplier information and purchase history. Track vendor pricing and contact details.' },
     { id: 'services', label: 'Services', icon: '🛠️', help: 'Define the types of services your company offers. Set default pricing and descriptions for each service.' },
     { id: 'resources', label: 'BCS Equipment Inventory', icon: '📚', help: 'Combined view of equipment, materials, and vendors. Manage all your company assets in one place.' },
-    { id: 'quotegenerator', label: 'Quote Generator', icon: '🧮', help: 'Quickly generate professional quotes using templates. Auto-calculate totals and generate PDFs.' },
     { id: 'xactimate', label: 'Xactimate', icon: '📐', help: 'Import and manage Xactimate estimates for insurance claims. Map Xactimate codes to your pricing.' },
     { id: 'remdryout', label: 'Remediation – Dryout', icon: '💧', help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
     { id: 'remrecon', label: 'Remediation – Reconstruction', icon: '🏗️', help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },

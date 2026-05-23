@@ -3,6 +3,12 @@ import db from '../db.js';
 
 const router = express.Router();
 
+// Ensure project_id column exists (migration)
+db.run('ALTER TABLE materials ADD COLUMN project_id INTEGER').catch(() => {});
+db.run('ALTER TABLE materials ADD COLUMN supplier TEXT').catch(() => {});
+db.run('ALTER TABLE materials ADD COLUMN quantity_on_hand INTEGER DEFAULT 0').catch(() => {});
+db.run('ALTER TABLE materials ADD COLUMN reorder_level INTEGER DEFAULT 10').catch(() => {});
+
 // GET all materials
 router.get('/', async (req, res, next) => {
   try {
@@ -35,14 +41,14 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const data = req.body;
-    const fields = ['name', 'description', 'unit', 'unit_price', 'quantity'];
-    const values = fields.map(f => data[f]);
-    
+    const fields = ['project_id', 'name', 'description', 'unit', 'unit_price', 'quantity_on_hand', 'reorder_level', 'supplier'];
+    const values = fields.map(f => data[f] ?? null);
+
     const result = await db.run(
-      `INSERT INTO materials (${fields.join(', ')}) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO materials (${fields.join(', ')}) VALUES (${fields.map(() => '?').join(', ')})`,
       values
     );
-    
+
     const newItem = await db.get('SELECT * FROM materials WHERE id = ?', [result.lastID]);
     res.status(201).json(newItem);
   } catch (error) {
@@ -56,15 +62,15 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const fields = ['name', 'description', 'unit', 'unit_price', 'quantity'];
-    const values = fields.map(f => data[f]);
+    const fields = ['project_id', 'name', 'description', 'unit', 'unit_price', 'quantity_on_hand', 'reorder_level', 'supplier'];
+    const values = fields.map(f => data[f] ?? null);
     values.push(id);
-    
+
     await db.run(
-      `UPDATE materials SET name = ?, description = ?, unit = ?, unit_price = ?, quantity = ? WHERE id = ?`,
+      `UPDATE materials SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`,
       values
     );
-    
+
     const updatedItem = await db.get('SELECT * FROM materials WHERE id = ?', [id]);
     res.json(updatedItem);
   } catch (error) {

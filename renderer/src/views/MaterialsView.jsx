@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { materialsAPI } from '../api-client';
+import { materialsAPI, workOrdersAPI } from '../api-client';
 import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Card } from '../components';
 
 export const MaterialsView = () => {
   const { items: materials, loading, error, fetchAll, create, update, remove } = useCRUD(materialsAPI);
+  const [workOrders, setWorkOrders] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState(null);
   const [formData, setFormData] = useState({
+    project_id: '',
     name: '',
     description: '',
     unit: 'each',
@@ -19,6 +21,7 @@ export const MaterialsView = () => {
 
   useEffect(() => {
     fetchAll();
+    workOrdersAPI.getAll().then(setWorkOrders).catch(() => {});
   }, []);
 
   const handleInputChange = (e) => {
@@ -54,6 +57,7 @@ export const MaterialsView = () => {
   const handleEdit = (material) => {
     setEditingMaterial(material);
     setFormData({
+      project_id: material.project_id || '',
       name: material.name || '',
       description: material.description || '',
       unit: material.unit || 'each',
@@ -78,6 +82,7 @@ export const MaterialsView = () => {
 
   const resetForm = () => {
     setFormData({
+      project_id: '',
       name: '',
       description: '',
       unit: 'each',
@@ -99,7 +104,14 @@ export const MaterialsView = () => {
     }
   };
 
+  const getProjectName = (projectId) => {
+    if (!projectId) return <span className="text-gray-400 text-xs">—</span>;
+    const wo = workOrders.find(w => w.id === projectId || w.id === Number(projectId));
+    return wo ? <span className="text-xs font-medium text-blue-700">{wo.work_order_number || wo.title}</span> : <span className="text-gray-400 text-xs">#{projectId}</span>;
+  };
+
   const columns = [
+    { header: 'Project', render: (row) => getProjectName(row.project_id) },
     { header: 'Name', accessor: 'name' },
     { header: 'Description', accessor: 'description' },
     {
@@ -174,6 +186,17 @@ export const MaterialsView = () => {
         title={editingMaterial ? 'Edit Material' : 'Add New Material'}
       >
         <form onSubmit={handleSubmit}>
+          <Select
+            label="Link to Project / Work Order"
+            name="project_id"
+            value={formData.project_id}
+            onChange={handleInputChange}
+            options={[
+              { value: '', label: '— No project (general stock) —' },
+              ...workOrders.map(wo => ({ value: wo.id, label: `${wo.work_order_number || wo.id} – ${wo.title || wo.client_name || ''}` }))
+            ]}
+          />
+
           <Input
             label="Material Name"
             name="name"
