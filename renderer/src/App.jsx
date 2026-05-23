@@ -1,4 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import {
+  LayoutDashboard, CalendarDays, Droplets, Users, ClipboardList,
+  FileText, FileBarChart2, BarChart2, Receipt, CreditCard,
+  GitMerge, Tag, HardHat, Wrench, Package, Building2,
+  Briefcase, Archive, Wind, Hammer, Navigation2,
+  TrendingUp, Send, MessageSquare, Settings, Search
+} from 'lucide-react';
 import { AppProvider } from './contexts/AppContext';
 import { getTheme } from './theme';
 import './dark-mode.css';
@@ -21,10 +28,7 @@ import ChangeOrdersView from './views/ChangeOrdersView';
 import EnhancedQuoteGeneratorView from './views/EnhancedQuoteGeneratorView';
 import CompanySettingsView from './views/CompanySettingsView';
 import ServicesView from './views/ServicesView';
-import PricingView from './views/PricingView';
 import ResourcesView from './views/ResourcesView';
-import LineItemsView from './views/LineItemsView';
-import XactimateView from './views/XactimateView';
 import RemediationDryoutView from './views/RemediationDryoutView';
 import RemediationReconstructionView from './views/RemediationReconstructionView';
 import JobTrackingView from './views/JobTrackingView';
@@ -135,34 +139,31 @@ function App() {
   const theme = getTheme(currentTheme, isDarkMode);
 
   const navigation = [
-    { id: 'dashboard', label: 'Dashboard', icon: '📊', help: 'Overview of your business metrics, recent activity, invoices, and quick access to all features. Start here to see the big picture.' },
-    { id: 'calendar', label: 'Calendar', icon: '📅', help: 'Schedule and view appointments, job deadlines, and team availability. Drag and drop to reschedule events.' },
-    { id: 'moisturelogs', label: 'Moisture Logs', icon: '💧', help: 'Record and track moisture readings for dry-out jobs. Monitor progress with daily logs and generate reports for insurance.' },
-    { id: 'clients', label: 'Clients', icon: '👥', help: 'Manage customer information, contact details, and job history. Add new clients and view their complete service record.' },
-    { id: 'workorders', label: 'Work Orders', icon: '📋', help: 'Create and manage job assignments. Track status, assign employees, and link to estimates and invoices.' },
-    { id: 'estimates', label: 'Estimates', icon: '📄', help: 'Create detailed cost estimates for jobs. Include labor, materials, and equipment. Convert approved estimates to work orders.' },
-    { id: 'sdestimator', label: 'SD Xactimate Estimator', icon: '📐', help: 'Full Xactimate-mirrored estimator for San Diego. Browse 150+ line items across all trades, apply O&P, and export professional PDFs.' },
-    { id: 'competitorpricing', label: 'Competitor Pricing', icon: '📊', help: 'Compare BCS rates vs SERVPRO, Paul Davis, and ServiceMaster for the San Diego market. Know your competitive position on every trade.' },
-    { id: 'invoices', label: 'Invoices', icon: '💰', help: 'Generate and send invoices to clients. Track payment status, send reminders, and record payments received.' },
-    { id: 'payments', label: 'Payments', icon: '💳', help: 'Process payments via Square or Stripe. View payment history and reconcile with invoices.' },
-    { id: 'changeorders', label: 'Change Orders', icon: '🔄', help: 'Document scope changes during a job. Track additional costs and get client approval for modifications.' },
-    { id: 'pricelist', label: 'Price List', icon: '💲', help: 'Manage your standard pricing for services, labor rates, and materials. Import/export price lists.' },
-    { id: 'pricing', label: 'Pricing', icon: '💵', help: 'Configure pricing rules, markups, and discounts. Set up pricing tiers for different client types.' },
-    { id: 'lineitems', label: 'Line Items', icon: '🧾', help: 'Manage individual billable items used in estimates and invoices. Define descriptions, units, and default prices.' },
-    { id: 'employees', label: 'Employees', icon: '👷', help: 'Manage your team members, their roles, certifications, and availability. Track hours and assign to jobs.' },
-    { id: 'equipment', label: 'Equipment', icon: '🔧', help: 'Track tools and machinery inventory. Monitor which equipment is deployed on job sites vs available.' },
-    { id: 'materials', label: 'Materials', icon: '📦', help: 'Manage building materials inventory. Track stock levels, costs, and usage across jobs.' },
-    { id: 'vendors', label: 'Vendors', icon: '🏢', help: 'Manage supplier information and purchase history. Track vendor pricing and contact details.' },
-    { id: 'services', label: 'Services', icon: '🛠️', help: 'Define the types of services your company offers. Set default pricing and descriptions for each service.' },
-    { id: 'resources', label: 'BCS Equipment Inventory', icon: '📚', help: 'Combined view of equipment, materials, and vendors. Manage all your company assets in one place.' },
-    { id: 'xactimate', label: 'Xactimate', icon: '📐', help: 'Import and manage Xactimate estimates for insurance claims. Map Xactimate codes to your pricing.' },
-    { id: 'remdryout', label: 'Remediation – Dryout', icon: '💧', help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
-    { id: 'remrecon', label: 'Remediation – Reconstruction', icon: '🏗️', help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },
-    { id: 'jobtracking', label: 'Job Tracking', icon: '🚧', help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
-    { id: 'reports', label: 'Reports', icon: '📈', help: 'Generate business reports: revenue, job completion, employee performance, and more. Export to PDF/Excel.' },
-    { id: 'messaging', label: 'Bulk Messaging', icon: '💬', help: 'Send SMS or email to multiple clients at once. Create templates for common notifications.' },
-    { id: 'quicksms', label: 'Quick SMS', icon: '💬', help: 'Send individual text messages to clients. Quick communication without opening full messaging.' },
-    { id: 'companysettings', label: 'Settings', icon: '⚙️', help: 'Configure company info, branding, payment integration, legal disclaimers, and app preferences.' },
+    { id: 'dashboard',         label: 'Dashboard',                    Icon: LayoutDashboard,  help: 'Overview of your business metrics, recent activity, invoices, and quick access to all features. Start here to see the big picture.' },
+    { id: 'calendar',          label: 'Calendar',                     Icon: CalendarDays,     help: 'Schedule and view appointments, job deadlines, and team availability. Drag and drop to reschedule events.' },
+    { id: 'moisturelogs',      label: 'Moisture Logs',                Icon: Droplets,         help: 'Record and track moisture readings for dry-out jobs. Monitor progress with daily logs and generate reports for insurance.' },
+    { id: 'clients',           label: 'Clients',                      Icon: Users,            help: 'Manage customer information, contact details, and job history. Add new clients and view their complete service record.' },
+    { id: 'workorders',        label: 'Work Orders',                  Icon: ClipboardList,    help: 'Create and manage job assignments. Track status, assign employees, and link to estimates and invoices.' },
+    { id: 'estimates',         label: 'Homeowner Estimates',          Icon: FileText,         help: 'Create detailed cost estimates for homeowner jobs. Include labor, materials, and equipment. Convert approved estimates to work orders.' },
+    { id: 'sdestimator',       label: 'Insurance Estimator',          Icon: FileBarChart2,    help: 'Full Xactimate-mirrored estimator for insurance claims. Browse 150+ line items across all trades, apply O&P, and export professional PDFs.' },
+    { id: 'competitorpricing', label: 'Competitor Pricing',           Icon: BarChart2,        help: 'Compare BCS rates vs SERVPRO, Paul Davis, and ServiceMaster for the San Diego market. Know your competitive position on every trade.' },
+    { id: 'invoices',          label: 'Invoices',                     Icon: Receipt,          help: 'Generate and send invoices to clients. Track payment status, send reminders, and record payments received.' },
+    { id: 'payments',          label: 'Payments',                     Icon: CreditCard,       help: 'Process payments via Square or Stripe. View payment history and reconcile with invoices.' },
+    { id: 'changeorders',      label: 'Change Orders',                Icon: GitMerge,         help: 'Document scope changes during a job. Track additional costs and get client approval for modifications.' },
+    { id: 'pricelist',         label: 'Price List',                   Icon: Tag,              help: 'Manage your standard pricing for services, labor rates, and materials. Build quotes directly from the catalog.' },
+    { id: 'employees',         label: 'Employees',                    Icon: HardHat,          help: 'Manage your team members, their roles, certifications, and availability. Track hours and assign to jobs.' },
+    { id: 'equipment',         label: 'Equipment',                    Icon: Wrench,           help: 'Track tools and machinery inventory. Monitor which equipment is deployed on job sites vs available.' },
+    { id: 'materials',         label: 'Materials',                    Icon: Package,          help: 'Manage building materials inventory. Track stock levels, costs, and usage across jobs.' },
+    { id: 'vendors',           label: 'Vendors',                      Icon: Building2,        help: 'Manage supplier and subcontractor directory. Filter by trade, search by name, and track contact details.' },
+    { id: 'services',          label: 'Services',                     Icon: Briefcase,        help: 'Define the types of services your company offers. Set default pricing and descriptions for each service.' },
+    { id: 'resources',         label: 'BCS Equipment Inventory',      Icon: Archive,          help: 'Combined view of equipment, materials, and vendors. Manage all your company assets in one place.' },
+    { id: 'remdryout',         label: 'Remediation – Dryout',         Icon: Wind,             help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
+    { id: 'remrecon',          label: 'Remediation – Reconstruction', Icon: Hammer,           help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },
+    { id: 'jobtracking',       label: 'Job Tracking',                 Icon: Navigation2,      help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
+    { id: 'reports',           label: 'Reports',                      Icon: TrendingUp,       help: 'Generate business reports: revenue, job completion, employee performance, and more. Export to PDF/Excel.' },
+    { id: 'messaging',         label: 'Bulk Messaging',               Icon: MessageSquare,    help: 'Send SMS or email to multiple clients at once. Create templates for common notifications.' },
+    { id: 'quicksms',          label: 'Quick SMS',                    Icon: Send,             help: 'Send individual text messages to clients. Quick communication without opening full messaging.' },
+    { id: 'companysettings',   label: 'Settings',                     Icon: Settings,         help: 'Configure company info, branding, payment integration, legal disclaimers, and app preferences.' },
   ];
 
   const handleNavigation = (viewId, clientContext = null) => {
@@ -229,7 +230,7 @@ function App() {
           results.push({
             type: 'menu',
             label: item.label,
-            icon: item.icon,
+            NavIcon: item.Icon,
             action: () => handleNavigation(item.id)
           });
         }
@@ -318,7 +319,6 @@ function App() {
       case 'estimates': return <EnhancedEstimatesView initialClient={selectedClient} />;
       case 'changeorders': return <ChangeOrdersView />;
       case 'pricelist': return <PriceListView />;
-      case 'pricing': return <PricingView />;
       case 'employees': return <EmployeesView />;
       case 'moisturelogs': return <MoistureLogsView />;
       case 'equipment': return <EquipmentView />;
@@ -326,8 +326,6 @@ function App() {
       case 'vendors': return <VendorsView />;
       case 'services': return <ServicesView />;
       case 'resources': return <ResourcesView />;
-      case 'lineitems': return <LineItemsView />;
-      case 'xactimate': return <XactimateView />;
       case 'remdryout': return <RemediationDryoutView />;
       case 'remrecon': return <RemediationReconstructionView />;
       case 'jobtracking': return <JobTrackingView />;
@@ -369,8 +367,8 @@ function App() {
               </div>
             )}
             {sidebarCollapsed && (
-              <div className="text-center">
-                <span className="text-2xl">🏗️</span>
+              <div className="text-center flex justify-center">
+                <Hammer size={24} className="text-gray-400" />
               </div>
             )}
           </div>
@@ -379,7 +377,7 @@ function App() {
           {!sidebarCollapsed && (
             <div className="p-4 relative">
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search everything..."
@@ -416,7 +414,10 @@ function App() {
                       }}
                       className="w-full text-left px-4 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-0 flex items-center gap-3"
                     >
-                      <span className="text-lg">{result.icon}</span>
+                      {result.NavIcon
+                        ? <result.NavIcon size={18} className="text-gray-400 flex-shrink-0" />
+                        : <span className="text-lg">{result.icon || '›'}</span>
+                      }
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-100 truncate">{result.label}</p>
                         {result.sublabel && (
@@ -447,7 +448,7 @@ function App() {
                   }`}
                   title={sidebarCollapsed ? item.label : ''}
                 >
-                  <span className="text-2xl flex-shrink-0">{item.icon}</span>
+                  <item.Icon size={20} className="flex-shrink-0 opacity-80" />
                   {!sidebarCollapsed && (
                     <>
                       <span className="font-medium text-sm leading-relaxed flex-1">{item.label}</span>
@@ -579,12 +580,17 @@ function App() {
   </button>
   
   <div className="flex-1">
-    <h1 className={`text-3xl font-bold ${theme.topBarText} flex items-center gap-3`}>
-      <span className="text-4xl">{navigation.find(n => n.id === currentView)?.icon}</span>
-      <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-        {navigation.find(n => n.id === currentView)?.label || 'Dashboard'}
-      </span>
-    </h1>
+    {(() => {
+      const nav = navigation.find(n => n.id === currentView);
+      return (
+        <h1 className={`text-3xl font-bold ${theme.topBarText} flex items-center gap-3`}>
+          {nav?.Icon && <nav.Icon size={28} className="text-blue-600 flex-shrink-0" />}
+          <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            {nav?.label || 'Dashboard'}
+          </span>
+        </h1>
+      );
+    })()}
   </div>
 
   {/* Claude AI Voice & Text Control */}
