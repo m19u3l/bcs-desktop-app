@@ -164,4 +164,41 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+// Proxy to Python ClaimScope engine; falls back to Claude if the service is offline
+router.post('/generate-nlp', async (req, res) => {
+  const { description } = req.body;
+  if (!description) return res.status(400).json({ error: 'description is required' });
+
+  // Try Python service first
+  try {
+    const pyRes = await fetch('http://127.0.0.1:8000/api/v2/estimates/generate-nlp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (pyRes.ok) {
+      const data = await pyRes.json();
+      return res.json(data);
+    }
+  } catch (_) {
+    // Python service offline — fall through to Claude
+  }
+
+  // Claude fallback
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      system: 'You are an Xactimate estimator for water damage and restoration. Return ONLY valid JSON matching this schema: {"status":"success","generatedPayload":{"assemblies":[{"code":"string","name":"string","quantity":number,"unit":"string","subtotalCents":number}]}}',
+      messages: [{ role: 'user', content: `Generate Xactimate line items for: ${description}` }],
+    });
+    const text = response.content[0]?.text || '{}';
+    const json = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    return res.json(json);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
