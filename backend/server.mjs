@@ -58,6 +58,7 @@ import aiRouter from './routes/ai.mjs';
 import competitorPricingRouter from './routes/competitor-pricing.mjs';
 import rsMeansRouter from './routes/rsmeans.mjs';
 import companiesRouter from './routes/companies.mjs';
+import sketchRouter from './routes/sketch.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +118,7 @@ app.use('/api/services', servicesRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/xactimate', xactimateRouter);
 app.use('/api/company-settings', companySettingsRouter);
+app.use('/api/sketches', sketchRouter);
 app.use('/api/notes', notesRouter);
 app.use('/api/email', emailRouter);
 app.use('/api/messaging', messagingRouter);

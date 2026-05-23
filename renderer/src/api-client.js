@@ -103,6 +103,9 @@ export const priceListAPI = {
 // Quotes API
 export const quotesAPI = createCRUDAPI('quotes');
 
+// Sketch Engine API
+export const sketchAPI = createCRUDAPI('sketches');
+
 // Company Settings API
 export const companySettingsAPI = {
   get: () => apiClient.get('/company-settings'),
