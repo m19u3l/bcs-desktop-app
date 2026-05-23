@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { changeOrdersAPI, workOrdersAPI } from '../api-client';
+import { changeOrdersAPI, workOrdersAPI, clientsAPI } from '../api-client';
 import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Textarea, Card } from '../components';
 
 export const ChangeOrdersView = () => {
   const { items: changeOrders, loading, error, fetchAll, create, update, remove } = useCRUD(changeOrdersAPI);
+  const [clients, setClients] = useState([]);
   const [workOrders, setWorkOrders] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingChangeOrder, setEditingChangeOrder] = useState(null);
   const [formData, setFormData] = useState({
+    client_id: '',
     work_order_id: '',
     change_order_number: '',
     description: '',
@@ -21,8 +23,18 @@ export const ChangeOrdersView = () => {
 
   useEffect(() => {
     fetchAll();
+    loadClients();
     loadWorkOrders();
   }, []);
+
+  const loadClients = async () => {
+    try {
+      const data = await clientsAPI.getAll();
+      setClients(data);
+    } catch (err) {
+      console.error('Error loading clients:', err);
+    }
+  };
 
   const loadWorkOrders = async () => {
     try {
@@ -65,6 +77,7 @@ export const ChangeOrdersView = () => {
   const handleEdit = (changeOrder) => {
     setEditingChangeOrder(changeOrder);
     setFormData({
+      client_id: changeOrder.client_id || '',
       work_order_id: changeOrder.work_order_id || '',
       change_order_number: changeOrder.change_order_number || '',
       description: changeOrder.description || '',
@@ -90,6 +103,7 @@ export const ChangeOrdersView = () => {
 
   const resetForm = () => {
     setFormData({
+      client_id: '',
       work_order_id: '',
       change_order_number: '',
       description: '',
@@ -192,6 +206,15 @@ export const ChangeOrdersView = () => {
         title={editingChangeOrder ? 'Edit Change Order' : 'Create New Change Order'}
       >
         <form onSubmit={handleSubmit}>
+          <Select
+            label="Client"
+            name="client_id"
+            value={formData.client_id}
+            onChange={handleInputChange}
+            required
+            options={clients.map((c) => ({ value: c.id, label: c.name }))}
+          />
+
           <Input
             label="Change Order Number"
             name="change_order_number"

@@ -47,9 +47,9 @@ router.post('/', async (req, res, next) => {
     const datePart = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     data.estimate_number = data.estimate_number || `EST-${datePart}-${randomPart}`;
-    // Auto-generate estimate number
-    const values = fields.map(f => data[f]);
-    
+    const fields = ['estimate_number', 'client_id', 'title', 'description', 'status', 'subtotal', 'tax_rate', 'tax_amount', 'total_amount', 'valid_until'];
+    const values = fields.map(f => data[f] ?? null);
+
     const result = await db.run(
       `INSERT INTO estimates (${fields.join(', ')}) VALUES (${fields.map(() => '?').join(', ')})`,
       values
@@ -68,12 +68,12 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const fields = ['estimate_number', 'client_id', 'title', 'description', 'total_amount', 'status'];
-    const values = fields.map(f => data[f]);
+    const fields = ['estimate_number', 'client_id', 'title', 'description', 'status', 'subtotal', 'tax_rate', 'tax_amount', 'total_amount', 'valid_until'];
+    const values = fields.map(f => data[f] ?? null);
     values.push(id);
-    
+
     await db.run(
-      `UPDATE estimates SET client_id = ?, title = ?, description = ?, total_amount = ?, status = ? WHERE id = ?`,
+      `UPDATE estimates SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`,
       values
     );
     

@@ -25,16 +25,13 @@ import PricingView from './views/PricingView';
 import ResourcesView from './views/ResourcesView';
 import LineItemsView from './views/LineItemsView';
 import XactimateView from './views/XactimateView';
-import DryOutJobsView from './views/DryOutJobsView';
 import RemediationDryoutView from './views/RemediationDryoutView';
 import RemediationReconstructionView from './views/RemediationReconstructionView';
 import JobTrackingView from './views/JobTrackingView';
 import ReportsView from './views/ReportsView';
-import LoggingUtilityView from './views/LoggingUtilityView';
 import MessagingView from './views/MessagingView';
 import QuickSMSView from './views/QuickSMSView';
 import PaymentsView from './views/PaymentsView';
-import TerminalBridgeView from './views/TerminalBridgeView';
 import SanDiegoEstimatorView from './views/SanDiegoEstimatorView';
 import CompetitorPricingView from './views/CompetitorPricingView';
 import './App.css';
@@ -162,14 +159,11 @@ function App() {
     { id: 'xactimate', label: 'Xactimate', icon: '📐', help: 'Import and manage Xactimate estimates for insurance claims. Map Xactimate codes to your pricing.' },
     { id: 'remdryout', label: 'Remediation – Dryout', icon: '💧', help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
     { id: 'remrecon', label: 'Remediation – Reconstruction', icon: '🏗️', help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },
-    { id: 'dryoutjobs', label: 'Dry-Out Jobs', icon: '🔥', help: 'List view of all active dry-out jobs. Monitor status, equipment deployed, and daily progress.' },
     { id: 'jobtracking', label: 'Job Tracking', icon: '🚧', help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
-    { id: 'loggingutility', label: 'Logging Utility', icon: '📜', help: 'System logs and activity history. Troubleshoot issues and track user actions in the app.' },
     { id: 'reports', label: 'Reports', icon: '📈', help: 'Generate business reports: revenue, job completion, employee performance, and more. Export to PDF/Excel.' },
     { id: 'messaging', label: 'Bulk Messaging', icon: '💬', help: 'Send SMS or email to multiple clients at once. Create templates for common notifications.' },
     { id: 'quicksms', label: 'Quick SMS', icon: '💬', help: 'Send individual text messages to clients. Quick communication without opening full messaging.' },
     { id: 'companysettings', label: 'Settings', icon: '⚙️', help: 'Configure company info, branding, payment integration, legal disclaimers, and app preferences.' },
-    { id: 'terminal', label: 'Terminal Bridge', icon: '💻', help: 'Security & pentest terminal. Run network scans, check SSL, analyze websites, and execute shell commands.' },
   ];
 
   const handleNavigation = (viewId, clientContext = null) => {
@@ -335,17 +329,14 @@ function App() {
       case 'resources': return <ResourcesView />;
       case 'lineitems': return <LineItemsView />;
       case 'xactimate': return <XactimateView />;
-      case 'dryoutjobs': return <DryOutJobsView />;
       case 'remdryout': return <RemediationDryoutView />;
       case 'remrecon': return <RemediationReconstructionView />;
       case 'jobtracking': return <JobTrackingView />;
-      case 'loggingutility': return <LoggingUtilityView />;
       case 'reports': return <ReportsView />;
       case 'quotegenerator': return <EnhancedQuoteGeneratorView />;
       case 'messaging': return <MessagingView />;
       case 'quicksms': return <QuickSMSView />;
       case 'companysettings': return <CompanySettingsView />;
-      case 'terminal': return <TerminalBridgeView />;
       case 'sdestimator': return <SanDiegoEstimatorView />;
       case 'competitorpricing': return <CompetitorPricingView />;
       default: return <ImprovedDashboardView />;
