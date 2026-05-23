@@ -4,7 +4,7 @@ import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Card } from '../components';
 import { generatePrintDocument, printDocument, LEGAL_DISCLAIMERS } from '../utils/printTemplates';
 
-export const InvoicesView = () => {
+export const InvoicesView = ({ initialClient }) => {
   const { items: invoices, loading, error, fetchAll, create, update, remove } = useCRUD(invoicesAPI);
   const [clients, setClients] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,6 +31,13 @@ export const InvoicesView = () => {
     fetchAll();
     loadClients();
   }, []);
+
+  useEffect(() => {
+    if (initialClient?.id) {
+      setFormData(prev => ({ ...prev, client_id: initialClient.id }));
+      setIsModalOpen(true);
+    }
+  }, [initialClient]);
 
   const loadClients = async () => {
     try {

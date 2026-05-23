@@ -4,7 +4,7 @@ import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Textarea, Card } from '../components';
 import { generatePrintDocument, printDocument, LEGAL_DISCLAIMERS } from '../utils/printTemplates';
 
-export const WorkOrdersView = () => {
+export const WorkOrdersView = ({ initialClient }) => {
   const { items: workOrders, loading, error, fetchAll, create, update, remove } = useCRUD(workOrdersAPI);
   const [clients, setClients] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -30,6 +30,13 @@ export const WorkOrdersView = () => {
     loadClients();
     loadEmployees();
   }, []);
+
+  useEffect(() => {
+    if (initialClient?.id) {
+      setFormData(prev => ({ ...prev, client_id: initialClient.id }));
+      setIsModalOpen(true);
+    }
+  }, [initialClient]);
 
   const loadClients = async () => {
     try {

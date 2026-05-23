@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { estimatesAPI, clientsAPI } from '../api-client';
 import EstimateDetailsView from './EstimateDetailsView';
 
-export default function EnhancedEstimatesView() {
+export default function EnhancedEstimatesView({ initialClient }) {
   const [estimates, setEstimates] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,13 @@ export default function EnhancedEstimatesView() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (initialClient?.id) {
+      setFormData(prev => ({ ...prev, client_id: initialClient.id }));
+      setShowNewEstimateModal(true);
+    }
+  }, [initialClient]);
 
   const loadData = async () => {
     try {

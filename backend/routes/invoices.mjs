@@ -35,14 +35,14 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const data = req.body;
-    const fields = ['client_id', 'work_order_id', 'amount', 'status', 'due_date'];
-    const values = fields.map(f => data[f]);
-    
+    const fields = ['client_id', 'work_order_id', 'invoice_number', 'amount', 'status', 'due_date', 'description'];
+    const values = fields.map(f => data[f] ?? null);
+
     const result = await db.run(
-      `INSERT INTO invoices (${fields.join(', ')}) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO invoices (${fields.join(', ')}) VALUES (${fields.map(() => '?').join(', ')})`,
       values
     );
-    
+
     const newItem = await db.get('SELECT * FROM invoices WHERE id = ?', [result.lastID]);
     res.status(201).json(newItem);
   } catch (error) {
@@ -56,15 +56,15 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const fields = ['client_id', 'work_order_id', 'amount', 'status', 'due_date'];
-    const values = fields.map(f => data[f]);
+    const fields = ['client_id', 'work_order_id', 'invoice_number', 'amount', 'status', 'due_date', 'description'];
+    const values = fields.map(f => data[f] ?? null);
     values.push(id);
-    
+
     await db.run(
-      `UPDATE invoices SET client_id = ?, work_order_id = ?, amount = ?, status = ?, due_date = ? WHERE id = ?`,
+      `UPDATE invoices SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`,
       values
     );
-    
+
     const updatedItem = await db.get('SELECT * FROM invoices WHERE id = ?', [id]);
     res.json(updatedItem);
   } catch (error) {

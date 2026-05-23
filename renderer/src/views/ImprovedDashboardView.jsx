@@ -28,6 +28,9 @@ export default function ImprovedDashboardView({ onNavigate }) {
   const [newNoteContent, setNewNoteContent] = useState('');
   const [showNoteForm, setShowNoteForm] = useState(false);
 
+  const [showDocPromptModal, setShowDocPromptModal] = useState(false);
+  const [selectedClientForDoc, setSelectedClientForDoc] = useState(null);
+
   const [emails, setEmails] = useState([]);
   const [loadingEmails, setLoadingEmails] = useState(false);
 
@@ -673,19 +676,19 @@ export default function ImprovedDashboardView({ onNavigate }) {
             
             <div className="flex flex-col gap-2">
               <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('estimates'); }}>
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('estimates', selectedClientForDoc); }}>
                 <span className="block font-bold text-blue-800">📄 Initialize Interactive Estimate / Quote</span>
                 <span className="block text-xs text-blue-600 mt-0.5">Launches design scope sheets pre-filled with client contact records.</span>
               </button>
 
               <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('invoices'); }}>
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('invoices', selectedClientForDoc); }}>
                 <span className="block font-bold text-green-800">💰 Generate Reconciled Pro-Rata Invoice</span>
                 <span className="block text-xs text-green-600 mt-0.5">Executes math engines to scale line totals while burying markups.</span>
               </button>
 
               <button className="w-full text-left p-3 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('work-orders'); }}>
+                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('workorders', selectedClientForDoc); }}>
                 <span className="block font-bold text-cyan-800">👷 Dispatch Field Operations Work Order</span>
                 <span className="block text-xs text-cyan-600 mt-0.5">Generates crew labor windows with all financial costs hidden.</span>
               </button>

@@ -44,6 +44,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentView, setCurrentView] = useState('dashboard');
   const [viewHistory, setViewHistory] = useState(['dashboard']);
+  const [selectedClient, setSelectedClient] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
@@ -171,9 +172,10 @@ function App() {
     { id: 'terminal', label: 'Terminal Bridge', icon: '💻', help: 'Security & pentest terminal. Run network scans, check SSL, analyze websites, and execute shell commands.' },
   ];
 
-  const handleNavigation = (viewId) => {
+  const handleNavigation = (viewId, clientContext = null) => {
     setCurrentView(viewId);
     setViewHistory(prev => [...prev, viewId]);
+    setSelectedClient(clientContext || null);
   };
 
   const handleBack = () => {
@@ -317,10 +319,10 @@ function App() {
       case 'dashboard': return <ImprovedDashboardView onNavigate={handleNavigation} />;
       case 'calendar': return <CalendarView />;
       case 'clients': return <ClientsView />;
-      case 'workorders': return <WorkOrdersView />;
-      case 'invoices': return <InvoicesView />;
+      case 'workorders': return <WorkOrdersView initialClient={selectedClient} />;
+      case 'invoices': return <InvoicesView initialClient={selectedClient} />;
       case 'payments': return <PaymentsView />;
-      case 'estimates': return <EnhancedEstimatesView />;
+      case 'estimates': return <EnhancedEstimatesView initialClient={selectedClient} />;
       case 'changeorders': return <ChangeOrdersView />;
       case 'pricelist': return <PriceListView />;
       case 'pricing': return <PricingView />;
