@@ -10,11 +10,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   MousePointer2, PenTool, Trash2, FileText, ZoomIn, ZoomOut,
   RotateCcw, Save, Plus, X, ChevronDown, ChevronRight,
-  Droplets, Flame, Wind, AlertTriangle, LayoutGrid, Download,
+  Droplets, Flame, Wind, AlertTriangle, LayoutGrid, Download, Upload,
 } from 'lucide-react';
 import { clientsAPI, estimatesAPI } from '../api-client';
 import { calculateRoom, totalStats } from '../lib/geometry';
-import { generateLineItems, DAMAGE_META } from '../engine/scopeRules';
+import { generateLineItems, generateSummary, DAMAGE_META } from '../engine/scopeRules';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const BASE_PX  = 24;   // pixels per foot at zoom 1.0
@@ -210,9 +210,13 @@ export const SketchView = () => {
   const [clientId,      setClientId]      = useState('');
   const [estimateTitle, setEstimateTitle] = useState('Sketch Estimate');
   const [lineItems,     setLineItems]     = useState([]);
+  const [summary,       setSummary]       = useState(null);
   const [showEstimate,  setShowEstimate]  = useState(false);
   const [generating,    setGenerating]    = useState(false);
   const [savedEstimate, setSavedEstimate] = useState(null);
+  const [dxfImporting,  setDxfImporting]  = useState(false);
+  const [dxfError,      setDxfError]      = useState(null);
+  const dxfInputRef = useRef(null);
 
   // Mouse drag bookkeeping (ref so no re-render)
   const drag = useRef({ active: false, handle: null, startCx: 0, startCy: 0, roomSnap: null });
@@ -377,30 +381,28 @@ export const SketchView = () => {
   // ── Estimate generation ──────────────────────────────────────────────────
   const buildLineItems = () => {
     const items = generateLineItems(rooms);
+    const sum   = generateSummary(items);
     setLineItems(items);
+    setSummary(sum);
+    setSavedEstimate(null);
     setShowEstimate(true);
   };
 
   const saveEstimate = async () => {
-    if (!lineItems.length) return;
+    if (!lineItems.length || !summary) return;
     setGenerating(true);
     try {
-      const subtotal = lineItems.reduce((s, i) => s + i.subtotal, 0);
-      const overhead = subtotal * 0.10;
-      const profit   = subtotal * 0.12;
-      const tax      = (subtotal + overhead + profit) * 0.0875;
-      const total    = subtotal + overhead + profit + tax;
-
+      const laborSummary = `Labor: ${summary.total_labor_hrs} hrs | Peak crew: ${summary.peak_crew} | Duration: ${summary.duration_days} cal days`;
       const estimate = await estimatesAPI.create({
         title:        estimateTitle,
         client_id:    clientId || null,
         status:       'draft',
-        description:  `Generated from sketch: ${sketchName}\n\n` +
+        description:  `Generated from sketch: ${sketchName}\n${laborSummary}\n\n` +
                       lineItems.map(i => `[${i.room_name}] ${i.description}: ${i.qty} ${i.unit} @ $${i.unit_price}`).join('\n'),
-        subtotal:     Math.round(subtotal * 100) / 100,
+        subtotal:     summary.subtotal,
         tax_rate:     8.75,
-        tax_amount:   Math.round(tax * 100) / 100,
-        total_amount: Math.round(total * 100) / 100,
+        tax_amount:   summary.tax,
+        total_amount: summary.total,
       });
       setSavedEstimate(estimate);
     } catch (err) {
@@ -446,9 +448,40 @@ export const SketchView = () => {
     setSelectedId(null); setShowEstimate(false); setLineItems([]);
   };
 
+  // ── DXF Import ───────────────────────────────────────────────────────────
+  const handleDxfImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDxfImporting(true);
+    setDxfError(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE}/sketches/import/dxf`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Import failed');
+      }
+      const sketch = await res.json();
+      setRooms(sketch.rooms || []);
+      setSketchName(sketch.name);
+      setSavedId(sketch.id);
+      setShowEstimate(false);
+      setLineItems([]);
+    } catch (err) {
+      setDxfError(err.message);
+    }
+    setDxfImporting(false);
+    e.target.value = '';
+  };
+
+  const exportDxf = () => {
+    if (!savedId) { alert('Save the sketch first before exporting.'); return; }
+    window.open(`${API_BASE}/sketches/${savedId}/export/dxf`, '_blank');
+  };
+
   // ── Stats ────────────────────────────────────────────────────────────────
   const stats = totalStats(rooms);
-  const estimateTotal = lineItems.reduce((s, i) => s + i.subtotal, 0);
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -555,13 +588,35 @@ export const SketchView = () => {
             <button onClick={saveSketch} className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors">
               <Save size={12} /> Save
             </button>
-            <button onClick={() => { setShowSaved(!showSaved); }} className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors">
+            <button onClick={() => setShowSaved(!showSaved)} className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors">
               <LayoutGrid size={12} /> Open
             </button>
             <button onClick={newSketch} className="py-1.5 px-3 bg-slate-700 hover:bg-slate-600 text-xs font-semibold rounded-lg transition-colors" title="New sketch">
               <Plus size={12} />
             </button>
           </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => dxfInputRef.current?.click()}
+              disabled={dxfImporting}
+              className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors"
+              title="Import DXF floorplan"
+            >
+              <Upload size={12} /> {dxfImporting ? 'Importing…' : 'Import DXF'}
+            </button>
+            <button
+              onClick={exportDxf}
+              disabled={!savedId}
+              className="flex-1 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors"
+              title="Export sketch as DXF"
+            >
+              <Download size={12} /> Export DXF
+            </button>
+          </div>
+          {dxfError && (
+            <p className="text-xs text-red-400 text-center leading-tight">{dxfError}</p>
+          )}
+          <input ref={dxfInputRef} type="file" accept=".dxf" className="hidden" onChange={handleDxfImport} />
         </div>
       </div>
 
@@ -697,85 +752,116 @@ export const SketchView = () => {
         )}
 
         {/* Estimate panel */}
-        {showEstimate && (
-          <div className="border-t bg-gray-50 flex flex-col" style={{ maxHeight: '55%' }}>
+        {showEstimate && summary && (
+          <div className="border-t bg-gray-50 flex flex-col" style={{ maxHeight: '60%' }}>
+
+            {/* Header */}
             <div className="flex justify-between items-center px-4 py-3 border-b bg-white">
               <h3 className="font-bold text-gray-800 text-sm">
-                Generated Line Items
-                <span className="ml-2 text-xs font-normal text-gray-400">{lineItems.length} items</span>
+                Generated Estimate
+                <span className="ml-2 text-xs font-normal text-gray-400">{lineItems.length} line items</span>
               </h3>
               <button onClick={() => setShowEstimate(false)}><X size={16} className="text-gray-400" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              {lineItems.length === 0 ? (
-                <p className="text-center py-6 text-sm text-gray-400">No damaged rooms to generate items from.</p>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-gray-100">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-gray-500 font-semibold">Item</th>
-                      <th className="text-right px-3 py-2 text-gray-500 font-semibold">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.map((item, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="px-3 py-2">
-                          <p className="font-medium text-gray-800 leading-snug">{item.description}</p>
-                          <p className="text-gray-400">{item.room_name} • {item.qty} {item.unit}</p>
-                        </td>
-                        <td className="px-3 py-2 text-right font-semibold text-gray-700 whitespace-nowrap">
-                          ${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-3 px-4 py-3 border-b bg-white">
+              <div className="bg-blue-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-blue-700">{summary.total_labor_hrs}</p>
+                <p className="text-xs text-blue-500 mt-0.5">Labor Hrs</p>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-orange-700">{summary.duration_days}</p>
+                <p className="text-xs text-orange-500 mt-0.5">Cal. Days</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-green-700">{summary.peak_crew}</p>
+                <p className="text-xs text-green-500 mt-0.5">Peak Crew</p>
+              </div>
             </div>
 
-            {lineItems.length > 0 && (
-              <div className="px-4 py-3 border-t bg-white space-y-3">
-                <div className="flex justify-between text-sm font-bold text-gray-800">
-                  <span>Subtotal</span>
-                  <span>${estimateTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="text-xs text-gray-400 leading-relaxed">
-                  + 10% Overhead + 12% Profit + 8.75% Tax applied at save
-                </div>
+            {/* Line items table */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-gray-100 z-10">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-gray-500 font-semibold">Item</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-semibold">Mat.</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-semibold">Labor</th>
+                    <th className="text-right px-3 py-2 text-gray-500 font-semibold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lineItems.map((item, i) => (
+                    <tr key={i} className={`border-t border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                      <td className="px-3 py-2">
+                        <p className="font-medium text-gray-800 leading-snug">{item.description}</p>
+                        <p className="text-gray-400">{item.room_name} • {item.qty} {item.unit} • {item.category}</p>
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-600 whitespace-nowrap">
+                        ${item.material_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-3 py-2 text-right text-blue-600 whitespace-nowrap">
+                        {item.labor_hours > 0
+                          ? `$${item.labor_cost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                          : <span className="text-gray-300">—</span>
+                        }
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold text-gray-800 whitespace-nowrap">
+                        ${item.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                {/* Client + title */}
+            {/* Cost stack + save */}
+            <div className="px-4 py-3 border-t bg-white space-y-2">
+              <div className="grid grid-cols-2 gap-x-4 text-xs text-gray-600">
+                <div className="flex justify-between"><span>Materials</span><span>${summary.material_total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span>Labor</span><span className="text-blue-600">${summary.labor_total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between border-t pt-1 mt-1"><span className="font-semibold text-gray-800">Subtotal</span><span className="font-semibold text-gray-800">${summary.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between border-t pt-1 mt-1"><span>Overhead (10%)</span><span>${summary.overhead.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span>Profit (12%)</span><span>${summary.profit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className="flex justify-between"><span>Tax (8.75%)</span><span>${summary.tax.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-gray-900 border-t pt-2 mt-1">
+                <span>TOTAL</span>
+                <span className="text-green-700">${summary.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className="flex gap-2 pt-1">
                 <input
                   value={estimateTitle}
                   onChange={e => setEstimateTitle(e.target.value)}
                   placeholder="Estimate title…"
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <select
                   value={clientId}
                   onChange={e => setClientId(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">— Select client (optional) —</option>
+                  <option value="">— Client (optional) —</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-
-                {savedEstimate ? (
-                  <div className="text-center text-sm text-green-600 font-semibold py-1">
-                    ✓ Estimate #{savedEstimate.estimate_number || savedEstimate.id} saved
-                  </div>
-                ) : (
-                  <button
-                    onClick={saveEstimate}
-                    disabled={generating}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-bold rounded-lg transition-colors"
-                  >
-                    {generating ? 'Saving…' : 'Save as Estimate'}
-                  </button>
-                )}
               </div>
-            )}
+
+              {savedEstimate ? (
+                <div className="text-center text-sm text-green-600 font-semibold py-1">
+                  Estimate #{savedEstimate.estimate_number || savedEstimate.id} saved
+                </div>
+              ) : (
+                <button
+                  onClick={saveEstimate}
+                  disabled={generating}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-bold rounded-lg transition-colors"
+                >
+                  {generating ? 'Saving…' : 'Save as Estimate'}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
