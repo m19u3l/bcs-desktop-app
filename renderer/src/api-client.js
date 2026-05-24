@@ -106,6 +106,12 @@ export const quotesAPI = createCRUDAPI('quotes');
 // Sketch Engine API
 export const sketchAPI = createCRUDAPI('sketches');
 
+// Assemblies API
+export const assembliesAPI = {
+  ...createCRUDAPI('assemblies'),
+  explode: (id, context) => apiClient.post(`/assemblies/${id}/explode`, context),
+};
+
 // Company Settings API
 export const companySettingsAPI = {
   get: () => apiClient.get('/company-settings'),

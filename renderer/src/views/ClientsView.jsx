@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { clientsAPI } from '../api-client';
 import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Card } from '../components';
+import AttachmentsPanel from '../components/AttachmentsPanel';
 
 export const ClientsView = () => {
   const { items: clients, loading, error, fetchAll, create, update, remove } = useCRUD(clientsAPI);
@@ -252,6 +253,12 @@ Building Care Solutions
                     {new Date(viewingClient.created_at || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-4">
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <AttachmentsPanel entityType="client" entityId={viewingClient.id} />
               </div>
             </div>
 

@@ -4,7 +4,7 @@ import {
   FileText, FileBarChart2, BarChart2, Receipt, CreditCard,
   GitMerge, Tag, HardHat, Wrench, Package, Building2,
   Briefcase, Archive, Wind, Hammer, Navigation2,
-  TrendingUp, Send, MessageSquare, Settings, Search, PenTool
+  TrendingUp, Send, MessageSquare, Settings, Search, PenTool, Layers
 } from 'lucide-react';
 import { AppProvider } from './contexts/AppContext';
 import { getTheme } from './theme';
@@ -39,6 +39,7 @@ import PaymentsView from './views/PaymentsView';
 import SanDiegoEstimatorView from './views/SanDiegoEstimatorView';
 import CompetitorPricingView from './views/CompetitorPricingView';
 import SketchView from './views/SketchView';
+import AssembliesView from './views/AssembliesView';
 import './App.css';
 
 function App() {
@@ -148,6 +149,7 @@ function App() {
     { id: 'estimates',         label: 'Homeowner Estimates',          Icon: FileText,         help: 'Create detailed cost estimates for homeowner jobs. Include labor, materials, and equipment. Convert approved estimates to work orders.' },
     { id: 'sdestimator',       label: 'Insurance Estimator',          Icon: FileBarChart2,    help: 'Full Xactimate-mirrored estimator for insurance claims. Browse 150+ line items across all trades, apply O&P, and export professional PDFs.' },
     { id: 'sketch',            label: 'Sketch Engine',                Icon: PenTool,          help: 'Draw 2D floorplans room-by-room. Mark damage types and auto-generate Xactimate-style estimates from geometry — area, perimeter, volume.' },
+    { id: 'assemblies',        label: 'Assemblies',                   Icon: Layers,           help: 'Build reusable line item packages (assemblies). One click adds a full Water Damage or Mold package to any estimate.' },
     { id: 'competitorpricing', label: 'Competitor Pricing',           Icon: BarChart2,        help: 'Compare BCS rates vs SERVPRO, Paul Davis, and ServiceMaster for the San Diego market. Know your competitive position on every trade.' },
     { id: 'invoices',          label: 'Invoices',                     Icon: Receipt,          help: 'Generate and send invoices to clients. Track payment status, send reminders, and record payments received.' },
     { id: 'payments',          label: 'Payments',                     Icon: CreditCard,       help: 'Process payments via Square or Stripe. View payment history and reconcile with invoices.' },
@@ -338,7 +340,8 @@ function App() {
       case 'companysettings': return <CompanySettingsView />;
       case 'sdestimator': return <SanDiegoEstimatorView />;
       case 'competitorpricing': return <CompetitorPricingView />;
-      case 'sketch': return <SketchView />;
+      case 'sketch':      return <SketchView />;
+      case 'assemblies':  return <AssembliesView />;
       default: return <ImprovedDashboardView />;
     }
   };
