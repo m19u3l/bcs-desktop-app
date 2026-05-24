@@ -162,17 +162,17 @@ Building Care Solutions
   ];
 
   return (
-    <div className="p-6 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Prominent Branding Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-8 md:p-10 text-white">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+        <div className="flex items-center justify-between w-full">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">👥 Client Management</h1>
-            <p className="text-blue-100 text-lg font-medium leading-relaxed">Building Care Solutions - {clients.length} Active Clients</p>
+            <h1 className="text-base font-bold text-gray-800">👥 Client Management</h1>
+            <p className="text-xs text-gray-400 ml-2">Building Care Solutions - {clients.length} Active Clients</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-lg font-semibold transition-all shadow-lg"
+            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors"
           >
             ➕ Add New Client
           </button>

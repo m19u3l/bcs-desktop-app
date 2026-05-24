@@ -233,14 +233,14 @@ const EnhancedQuoteGeneratorView = () => {
   return (
     <div className="p-6 md:p-8 space-y-6 bg-gray-50 min-h-screen">
       {/* Branded Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-xl p-8 md:p-10 text-white">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+        <div className="flex items-center justify-between w-full">
           <div className="flex-1">
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">
+            <h1 className="text-base font-bold text-gray-800">
               <Calculator className="inline mr-3 mb-1" size={36} />
               Xactimate Quote Generator
             </h1>
-            <p className="text-green-100 text-lg font-medium leading-relaxed">
+            <p className="text-xs text-gray-400 ml-2">
               Building Care Solutions - Professional Estimation System
             </p>
           </div>

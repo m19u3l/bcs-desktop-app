@@ -148,11 +148,11 @@ export const LoggingUtilityView = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 md:space-y-8 bg-gray-50 min-h-screen">
-      <div className="bg-gradient-to-r from-gray-700 to-gray-900 rounded-2xl shadow-xl p-8 md:p-10 text-white">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+        <div className="flex items-center justify-between w-full">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">Logging Utility</h1>
+            <h1 className="text-base font-bold text-gray-800">Logging Utility</h1>
             <p className="text-gray-300 text-lg font-medium leading-relaxed">Building Care Solutions - {logs.length} Log Entries</p>
           </div>
           <div className="flex gap-2">

@@ -165,23 +165,21 @@ export const JobTrackingView = () => {
   ];
 
   return (
-    <div className="p-6 md:p-8 space-y-6 md:space-y-8 bg-gray-50 min-h-screen">
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-8 md:p-10 text-white">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">Job Tracking</h1>
-            <p className="text-indigo-100 text-lg font-medium leading-relaxed">Building Care Solutions - {jobTrackings.length} Jobs Tracked</p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-white text-indigo-600 hover:bg-indigo-50 rounded-lg font-semibold transition-all shadow-lg"
-          >
-            Add Tracking Entry
-          </button>
+    <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-bold text-gray-800">Job Tracking</h1>
+          <span className="text-xs text-gray-400">{jobTrackings.length} jobs</span>
         </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          + Add Entry
+        </button>
       </div>
 
-      <Card title="" subtitle="" actions={null}>
+      <Card title="" subtitle="" actions={null} className="!p-0">
         {error && (
           <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
             Error: {error}

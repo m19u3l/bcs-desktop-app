@@ -377,10 +377,10 @@ ${BCS_SIGNATURE}`;
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 md:space-y-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-8 md:p-10 text-white">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight">📅 Calendar & Reminders</h1>
-        <p className="text-blue-100 text-lg font-medium leading-relaxed">Building Care Solutions - Professional Scheduling System</p>
+    <div className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+        <h1 className="text-base font-bold text-gray-800">📅 Calendar & Reminders</h1>
+        <p className="text-xs text-gray-400 ml-2">Building Care Solutions - Professional Scheduling System</p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
