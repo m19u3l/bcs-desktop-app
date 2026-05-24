@@ -3,6 +3,7 @@ import { workOrdersAPI, clientsAPI, employeesAPI } from '../api-client';
 import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Textarea, Card } from '../components';
 import { generatePrintDocument, printDocument, LEGAL_DISCLAIMERS } from '../utils/printTemplates';
+import AttachmentsPanel from '../components/AttachmentsPanel';
 
 export const WorkOrdersView = ({ initialClient }) => {
   const { items: workOrders, loading, error, fetchAll, create, update, remove } = useCRUD(workOrdersAPI);
@@ -470,6 +471,10 @@ Building Care Solutions
                   <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{viewingWorkOrder.description}</p>
                 </div>
               )}
+
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <AttachmentsPanel entityType="work_order" entityId={viewingWorkOrder.id} />
+              </div>
             </div>
 
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3">

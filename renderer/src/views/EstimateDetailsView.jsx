@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { estimatesAPI } from '../api-client';
 import LineItemEditor from '../components/LineItemEditor';
 import PriceListSearchModal from '../components/PriceListSearchModal';
+import AttachmentsPanel from '../components/AttachmentsPanel';
 
 export default function EstimateDetailsView({ estimateId, onBack }) {
   const [estimate, setEstimate] = useState(null);
@@ -195,6 +196,11 @@ export default function EstimateDetailsView({ estimateId, onBack }) {
                 <p className="font-medium">{estimate.valid_until || 'Not set'}</p>
               </div>
             </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <AttachmentsPanel entityType="estimate" entityId={estimateId} />
           </div>
 
           {/* Line Items */}
