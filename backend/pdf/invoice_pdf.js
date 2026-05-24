@@ -1,184 +1,119 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
-import path from 'path';
+import { applyBranding, drawFooter } from './brand.js';
 
-/**
- * Generate Invoice PDF
- * @param {Object} invoiceData - Invoice data including line items
- * @param {String} outputPath - Path where PDF will be saved
- * @returns {Promise} - Resolves when PDF is generated
- */
-export function generateInvoicePDF(invoiceData, outputPath) {
+const fmt = n => `$${parseFloat(n || 0).toFixed(2)}`;
+
+export function generateInvoicePDF(invoiceData, outputPath, settings = {}) {
   return new Promise((resolve, reject) => {
     try {
-      // Create a new PDF document
-      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
-
-      // Pipe to file
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50, autoFirstPage: true });
       const stream = fs.createWriteStream(outputPath);
       doc.pipe(stream);
 
-      // Company Header
-      doc.fontSize(24)
-        .fillColor('#2563eb')
-        .text('BCS RESTORATION', { align: 'center' });
+      // ── Branding header ───────────────────────────────────────────────────
+      let y = applyBranding(doc, settings);
 
-      doc.fontSize(10)
-        .fillColor('#666666')
-        .text('Building Construction Services', { align: 'center' })
-        .text('Professional Restoration & Reconstruction', { align: 'center' })
-        .moveDown();
+      // ── Document title ────────────────────────────────────────────────────
+      doc.fontSize(18).fillColor('#1e40af').font('Helvetica-Bold')
+        .text('INVOICE', 50, y, { align: 'center', width: 512 });
+      y += 28;
 
-      doc.fontSize(9)
-        .text('Phone: (555) 123-4567 | Email: info@bcsrestoration.com', { align: 'center' })
-        .text('123 Business St, San Diego, CA 92101', { align: 'center' })
-        .moveDown(2);
-
-      // Invoice Title
-      doc.fontSize(20)
-        .fillColor('#1e40af')
-        .text('INVOICE', { align: 'center' })
-        .moveDown();
-
-      // Invoice Details Section
-      const invoiceTopY = doc.y;
-
-      // Left side - Client info
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('BILL TO:', 50, invoiceTopY, { underline: true });
-
-      doc.fontSize(9)
-        .fillColor('#333333')
-        .text(invoiceData.client_name || 'Client Name', 50, invoiceTopY + 20)
+      // ── Bill To / Invoice Info ────────────────────────────────────────────
+      const topY = y;
+      doc.fontSize(9).fillColor('#000').font('Helvetica-Bold')
+        .text('BILL TO:', 50, topY);
+      doc.fontSize(8.5).fillColor('#333').font('Helvetica')
+        .text(invoiceData.client_name    || '', 50, topY + 14)
         .text(invoiceData.client_address || '', 50)
-        .text(`${invoiceData.client_city || ''} ${invoiceData.client_state || ''} ${invoiceData.client_zip || ''}`, 50)
-        .text(invoiceData.client_phone || '', 50)
-        .text(invoiceData.client_email || '', 50);
+        .text([invoiceData.client_city, invoiceData.client_state, invoiceData.client_zip].filter(Boolean).join(', '), 50)
+        .text(invoiceData.client_phone   || '', 50)
+        .text(invoiceData.client_email   || '', 50);
 
-      // Right side - Invoice info
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('Invoice #:', 350, invoiceTopY)
-        .text('Invoice Date:', 350)
-        .text('Due Date:', 350)
-        .text('Status:', 350);
+      const labels = ['Invoice #', 'Invoice Date', 'Due Date', 'Status'];
+      const values = [
+        invoiceData.invoice_number || '—',
+        invoiceData.invoice_date   || '—',
+        invoiceData.due_date       || '—',
+        invoiceData.status         || 'Pending',
+      ];
+      doc.fontSize(9).fillColor('#000').font('Helvetica-Bold');
+      labels.forEach((l, i) => doc.text(l + ':', 360, topY + i * 14));
+      doc.fontSize(8.5).fillColor('#1e40af').font('Helvetica');
+      values.forEach((v, i) => doc.text(v, 440, topY + i * 14));
 
-      doc.fontSize(9)
-        .fillColor('#333333')
-        .text(invoiceData.invoice_number || 'N/A', 450, invoiceTopY)
-        .text(invoiceData.invoice_date || 'N/A', 450)
-        .text(invoiceData.due_date || 'N/A', 450)
-        .text(invoiceData.status || 'Pending', 450);
+      y = topY + 70;
 
-      doc.moveDown(3);
+      // ── Line items table ──────────────────────────────────────────────────
+      const COL = { desc: 50, qty: 290, unit: 340, rate: 390, amount: 470 };
+      const TW  = 512;
 
-      // Line Items Table
-      const tableTop = doc.y + 20;
-      const col1 = 50;
-      const col2 = 250;
-      const col3 = 350;
-      const col4 = 420;
-      const col5 = 500;
+      // Header row
+      doc.rect(50, y, TW, 20).fillAndStroke('#1e40af', '#1e40af');
+      doc.fontSize(8.5).fillColor('#fff').font('Helvetica-Bold')
+        .text('Description', COL.desc + 4, y + 5, { width: 235 })
+        .text('Qty',         COL.qty  + 4, y + 5, { width: 45,  align: 'right' })
+        .text('Unit',        COL.unit + 4, y + 5, { width: 45,  align: 'right' })
+        .text('Rate',        COL.rate + 4, y + 5, { width: 75,  align: 'right' })
+        .text('Amount',      COL.amount+4, y + 5, { width: 90,  align: 'right' });
+      y += 24;
 
-      // Table Header
-      doc.rect(col1, tableTop - 5, 512, 25)
-        .fillAndStroke('#2563eb', '#2563eb');
-
-      doc.fontSize(10)
-        .fillColor('#ffffff')
-        .text('Description', col1 + 5, tableTop + 5, { width: 190 })
-        .text('Qty', col2 + 5, tableTop + 5, { width: 40 })
-        .text('Rate', col3 + 5, tableTop + 5, { width: 60 })
-        .text('Amount', col5 + 5, tableTop + 5, { width: 60, align: 'right' });
-
-      // Table Rows
-      let yPosition = tableTop + 35;
       const lineItems = invoiceData.line_items || [];
-
-      doc.fillColor('#000000');
-      lineItems.forEach((item, index) => {
-        const rowBg = index % 2 === 0 ? '#f8fafc' : '#ffffff';
-
-        doc.rect(col1, yPosition - 5, 512, 25)
-          .fillAndStroke(rowBg, '#e2e8f0');
-
-        doc.fontSize(9)
-          .fillColor('#333333')
-          .text(item.description || '', col1 + 5, yPosition, { width: 190 })
-          .text(item.quantity || 1, col2 + 5, yPosition, { width: 40 })
-          .text(`$${parseFloat(item.rate || 0).toFixed(2)}`, col3 + 5, yPosition, { width: 60 })
-          .text(`$${parseFloat(item.amount || 0).toFixed(2)}`, col5 + 5, yPosition, { width: 60, align: 'right' });
-
-        yPosition += 30;
-
-        // Add new page if needed
-        if (yPosition > 700) {
+      doc.font('Helvetica');
+      lineItems.forEach((item, i) => {
+        if (y > 700) {
+          drawFooter(doc, settings);
           doc.addPage();
-          yPosition = 50;
+          y = applyBranding(doc, settings) + 10;
         }
+        const bg = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+        doc.rect(50, y - 3, TW, 18).fillAndStroke(bg, '#e2e8f0');
+        doc.fontSize(8).fillColor('#333')
+          .text(item.description || '', COL.desc + 4, y, { width: 235 })
+          .text(String(item.quantity || 1), COL.qty + 4, y, { width: 45, align: 'right' })
+          .text(item.unit || '', COL.unit + 4, y, { width: 45, align: 'right' })
+          .text(fmt(item.rate),   COL.rate + 4,   y, { width: 75,  align: 'right' })
+          .text(fmt(item.amount), COL.amount + 4, y, { width: 90,  align: 'right' });
+        y += 18;
       });
 
-      // Totals Section
-      yPosition += 10;
-      const totalsX = 400;
+      // ── Totals ────────────────────────────────────────────────────────────
+      y += 10;
+      const totX = 390;
+      const totW = 170;
+      const rows = [
+        ['Subtotal', fmt(invoiceData.subtotal), false],
+        ['Tax',      fmt(invoiceData.tax_amount || invoiceData.tax), false],
+        ['TOTAL',    fmt(invoiceData.total_amount || invoiceData.total), true],
+      ];
+      rows.forEach(([label, value, bold]) => {
+        doc.fontSize(bold ? 10 : 8.5)
+          .fillColor(bold ? '#1e40af' : '#333')
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .text(label, totX, y, { width: 80 })
+          .text(value, totX + 80, y, { width: totW - 80, align: 'right' });
+        y += bold ? 16 : 13;
+      });
 
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('Subtotal:', totalsX, yPosition)
-        .text(`$${parseFloat(invoiceData.subtotal || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right' });
-
-      yPosition += 20;
-      doc.text('Tax:', totalsX, yPosition)
-        .text(`$${parseFloat(invoiceData.tax || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right' });
-
-      yPosition += 20;
-      doc.fontSize(12)
-        .fillColor('#1e40af')
-        .text('Total:', totalsX, yPosition, { underline: true })
-        .text(`$${parseFloat(invoiceData.total || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right', underline: true });
-
-      // Notes Section
+      // ── Notes ─────────────────────────────────────────────────────────────
       if (invoiceData.notes) {
-        yPosition += 40;
-        doc.fontSize(10)
-          .fillColor('#000000')
-          .text('Notes:', 50, yPosition, { underline: true });
-
-        doc.fontSize(9)
-          .fillColor('#333333')
-          .text(invoiceData.notes, 50, yPosition + 15, { width: 500 });
+        y += 12;
+        doc.fontSize(9).fillColor('#000').font('Helvetica-Bold').text('Notes:', 50, y);
+        doc.fontSize(8.5).fillColor('#333').font('Helvetica').text(invoiceData.notes, 50, y + 13, { width: 512 });
       }
 
-      // Footer
-      doc.fontSize(8)
-        .fillColor('#666666')
-        .text(
-          'Thank you for your business!',
-          50,
-          doc.page.height - 100,
-          { align: 'center' }
-        )
-        .text(
-          'Payment terms: Net 30 days | Late fees may apply',
-          50,
-          doc.page.height - 85,
-          { align: 'center' }
-        );
+      // ── Payment terms ─────────────────────────────────────────────────────
+      const terms = settings.payment_terms || 'Net 30 days. Late fees may apply.';
+      doc.fontSize(7.5).fillColor('#64748b').font('Helvetica')
+        .text(`Payment Terms: ${terms}`, 50, 730, { align: 'center', width: 512 });
 
-      // Finalize PDF
+      // ── Footer ────────────────────────────────────────────────────────────
+      drawFooter(doc, settings, 1, 1);
+
       doc.end();
-
-      stream.on('finish', () => {
-        resolve(outputPath);
-      });
-
-      stream.on('error', (error) => {
-        reject(error);
-      });
-    } catch (error) {
-      reject(error);
-    }
+      stream.on('finish', () => resolve(outputPath));
+      stream.on('error', reject);
+    } catch (err) { reject(err); }
   });
 }
 

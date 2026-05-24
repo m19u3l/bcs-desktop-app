@@ -1,208 +1,141 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
-import path from 'path';
+import { applyBranding, drawFooter } from './brand.js';
 
-/**
- * Generate Estimate PDF
- * @param {Object} estimateData - Estimate data including line items
- * @param {String} outputPath - Path where PDF will be saved
- * @returns {Promise} - Resolves when PDF is generated
- */
-export function generateEstimatePDF(estimateData, outputPath) {
+const fmt = n => `$${parseFloat(n || 0).toFixed(2)}`;
+
+export function generateEstimatePDF(estimateData, outputPath, settings = {}) {
   return new Promise((resolve, reject) => {
     try {
-      // Create a new PDF document
-      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
-
-      // Pipe to file
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50, autoFirstPage: true });
       const stream = fs.createWriteStream(outputPath);
       doc.pipe(stream);
 
-      // Company Header
-      doc.fontSize(24)
-        .fillColor('#2563eb')
-        .text('BCS RESTORATION', { align: 'center' });
+      // ── Branding header ───────────────────────────────────────────────────
+      let y = applyBranding(doc, settings);
 
-      doc.fontSize(10)
-        .fillColor('#666666')
-        .text('Building Construction Services', { align: 'center' })
-        .text('Professional Restoration & Reconstruction', { align: 'center' })
-        .moveDown();
+      // ── Document title ────────────────────────────────────────────────────
+      doc.fontSize(18).fillColor('#059669').font('Helvetica-Bold')
+        .text('PROJECT ESTIMATE', 50, y, { align: 'center', width: 512 });
+      y += 28;
 
-      doc.fontSize(9)
-        .text('Phone: (555) 123-4567 | Email: info@bcsrestoration.com', { align: 'center' })
-        .text('123 Business St, San Diego, CA 92101', { align: 'center' })
-        .moveDown(2);
-
-      // Estimate Title
-      doc.fontSize(20)
-        .fillColor('#059669')
-        .text('PROJECT ESTIMATE', { align: 'center' })
-        .moveDown();
-
-      // Estimate Details Section
-      const estimateTopY = doc.y;
-
-      // Left side - Client info
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('PREPARED FOR:', 50, estimateTopY, { underline: true });
-
-      doc.fontSize(9)
-        .fillColor('#333333')
-        .text(estimateData.client_name || 'Client Name', 50, estimateTopY + 20)
+      // ── Prepared For / Estimate Info ──────────────────────────────────────
+      const topY = y;
+      doc.fontSize(9).fillColor('#000').font('Helvetica-Bold')
+        .text('PREPARED FOR:', 50, topY);
+      doc.fontSize(8.5).fillColor('#333').font('Helvetica')
+        .text(estimateData.client_name    || '', 50, topY + 14)
         .text(estimateData.client_address || '', 50)
-        .text(`${estimateData.client_city || ''} ${estimateData.client_state || ''} ${estimateData.client_zip || ''}`, 50)
-        .text(estimateData.client_phone || '', 50)
-        .text(estimateData.client_email || '', 50);
+        .text([estimateData.client_city, estimateData.client_state, estimateData.client_zip].filter(Boolean).join(', '), 50)
+        .text(estimateData.client_phone   || '', 50)
+        .text(estimateData.client_email   || '', 50);
 
-      // Right side - Estimate info
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('Estimate #:', 350, estimateTopY)
-        .text('Estimate Date:', 350)
-        .text('Valid Until:', 350)
-        .text('Status:', 350);
+      const labels = ['Estimate #', 'Date', 'Valid Until', 'Status'];
+      const values = [
+        estimateData.estimate_number || estimateData.id || '—',
+        estimateData.estimate_date   || estimateData.created_at?.slice(0, 10) || '—',
+        estimateData.valid_until     || '—',
+        estimateData.status          || 'Draft',
+      ];
+      doc.fontSize(9).fillColor('#000').font('Helvetica-Bold');
+      labels.forEach((l, i) => doc.text(l + ':', 360, topY + i * 14));
+      doc.fontSize(8.5).fillColor('#059669').font('Helvetica');
+      values.forEach((v, i) => doc.text(String(v), 440, topY + i * 14));
 
-      doc.fontSize(9)
-        .fillColor('#333333')
-        .text(estimateData.estimate_number || 'N/A', 450, estimateTopY)
-        .text(estimateData.estimate_date || 'N/A', 450)
-        .text(estimateData.valid_until || 'N/A', 450)
-        .text(estimateData.status || 'Draft', 450);
+      y = topY + 70;
 
-      doc.moveDown(3);
-
-      // Project Description
-      if (estimateData.project_description) {
-        doc.fontSize(10)
-          .fillColor('#000000')
-          .text('PROJECT DESCRIPTION:', 50, doc.y, { underline: true });
-
-        doc.fontSize(9)
-          .fillColor('#333333')
-          .text(estimateData.project_description, 50, doc.y + 10, { width: 500 })
-          .moveDown();
+      // ── Project description ───────────────────────────────────────────────
+      if (estimateData.description || estimateData.project_description) {
+        const desc = estimateData.description || estimateData.project_description;
+        doc.fontSize(9).fillColor('#000').font('Helvetica-Bold').text('PROJECT DESCRIPTION:', 50, y);
+        doc.fontSize(8.5).fillColor('#333').font('Helvetica').text(desc, 50, y + 13, { width: 512 });
+        y += 13 + Math.ceil(desc.length / 85) * 11 + 8;
       }
 
-      // Line Items Table
-      const tableTop = doc.y + 20;
-      const col1 = 50;
-      const col2 = 250;
-      const col3 = 350;
-      const col4 = 420;
-      const col5 = 500;
+      // ── Line items table ──────────────────────────────────────────────────
+      y += 6;
+      const COL = { desc: 50, qty: 270, unit: 318, rate: 378, amount: 458 };
+      const TW  = 512;
 
-      // Table Header
-      doc.rect(col1, tableTop - 5, 512, 25)
-        .fillAndStroke('#059669', '#059669');
+      doc.rect(50, y, TW, 20).fillAndStroke('#059669', '#059669');
+      doc.fontSize(8.5).fillColor('#fff').font('Helvetica-Bold')
+        .text('Description', COL.desc + 4, y + 5, { width: 215 })
+        .text('Qty',         COL.qty  + 4, y + 5, { width: 43,  align: 'right' })
+        .text('Unit',        COL.unit + 4, y + 5, { width: 55,  align: 'right' })
+        .text('Unit Price',  COL.rate + 4, y + 5, { width: 75,  align: 'right' })
+        .text('Amount',      COL.amount+4, y + 5, { width: 100, align: 'right' });
+      y += 24;
 
-      doc.fontSize(10)
-        .fillColor('#ffffff')
-        .text('Description', col1 + 5, tableTop + 5, { width: 190 })
-        .text('Qty', col2 + 5, tableTop + 5, { width: 40 })
-        .text('Rate', col3 + 5, tableTop + 5, { width: 60 })
-        .text('Amount', col5 + 5, tableTop + 5, { width: 60, align: 'right' });
-
-      // Table Rows
-      let yPosition = tableTop + 35;
       const lineItems = estimateData.line_items || [];
+      let lastCategory = null;
+      doc.font('Helvetica');
 
-      doc.fillColor('#000000');
-      lineItems.forEach((item, index) => {
-        const rowBg = index % 2 === 0 ? '#f0fdf4' : '#ffffff';
-
-        doc.rect(col1, yPosition - 5, 512, 25)
-          .fillAndStroke(rowBg, '#d1fae5');
-
-        doc.fontSize(9)
-          .fillColor('#333333')
-          .text(item.description || '', col1 + 5, yPosition, { width: 190 })
-          .text(item.quantity || 1, col2 + 5, yPosition, { width: 40 })
-          .text(`$${parseFloat(item.rate || 0).toFixed(2)}`, col3 + 5, yPosition, { width: 60 })
-          .text(`$${parseFloat(item.amount || 0).toFixed(2)}`, col5 + 5, yPosition, { width: 60, align: 'right' });
-
-        yPosition += 30;
-
-        // Add new page if needed
-        if (yPosition > 700) {
+      lineItems.forEach((item, i) => {
+        if (y > 700) {
+          drawFooter(doc, settings);
           doc.addPage();
-          yPosition = 50;
+          y = applyBranding(doc, settings) + 10;
+          lastCategory = null;
         }
+        // Category sub-header
+        if (item.category && item.category !== lastCategory) {
+          doc.rect(50, y, TW, 14).fillAndStroke('#f0fdf4', '#d1fae5');
+          doc.fontSize(7.5).fillColor('#065f46').font('Helvetica-Bold')
+            .text(item.category.toUpperCase(), COL.desc + 4, y + 3, { width: TW - 8 });
+          y += 16;
+          lastCategory = item.category;
+        }
+        const bg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+        doc.rect(50, y - 2, TW, 16).fillAndStroke(bg, '#e2e8f0');
+        doc.fontSize(8).fillColor('#333').font('Helvetica')
+          .text(item.description || '', COL.desc + 4, y, { width: 215 })
+          .text(String(item.qty || item.quantity || 1), COL.qty + 4, y, { width: 43, align: 'right' })
+          .text(item.unit || '', COL.unit + 4, y, { width: 55, align: 'right' })
+          .text(fmt(item.unit_price || item.rate), COL.rate + 4, y, { width: 75, align: 'right' })
+          .text(fmt(item.subtotal   || item.amount), COL.amount + 4, y, { width: 100, align: 'right' });
+        y += 16;
       });
 
-      // Totals Section
-      yPosition += 10;
-      const totalsX = 400;
+      // ── Totals ────────────────────────────────────────────────────────────
+      y += 12;
+      const totX = 380;
+      const totW = 180;
+      const totRows = [
+        ['Subtotal',        fmt(estimateData.subtotal),                          false],
+        ['Overhead (10%)',  fmt((estimateData.subtotal || 0) * 0.10),            false],
+        ['Profit (12%)',    fmt((estimateData.subtotal || 0) * 0.12),            false],
+        ['Tax (8.75%)',     fmt(estimateData.tax_amount || estimateData.tax),    false],
+        ['TOTAL',           fmt(estimateData.total_amount || estimateData.total), true],
+      ];
+      totRows.forEach(([label, value, bold]) => {
+        if (bold) {
+          doc.rect(totX - 4, y - 2, totW + 8, 18).fillAndStroke('#f0fdf4', '#d1fae5');
+        }
+        doc.fontSize(bold ? 10 : 8.5)
+          .fillColor(bold ? '#059669' : '#333')
+          .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+          .text(label, totX, y, { width: 95 })
+          .text(value, totX + 95, y, { width: totW - 95, align: 'right' });
+        y += bold ? 18 : 13;
+      });
 
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('Subtotal:', totalsX, yPosition)
-        .text(`$${parseFloat(estimateData.subtotal || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right' });
-
-      yPosition += 20;
-      doc.text('Tax:', totalsX, yPosition)
-        .text(`$${parseFloat(estimateData.tax || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right' });
-
-      yPosition += 20;
-      doc.fontSize(12)
-        .fillColor('#059669')
-        .text('Total Estimate:', totalsX, yPosition, { underline: true })
-        .text(`$${parseFloat(estimateData.total || 0).toFixed(2)}`, totalsX + 100, yPosition, { align: 'right', underline: true });
-
-      // Terms & Conditions
-      yPosition += 40;
-      doc.fontSize(10)
-        .fillColor('#000000')
-        .text('TERMS & CONDITIONS:', 50, yPosition, { underline: true });
-
-      const terms = estimateData.terms || 'This estimate is valid for 30 days from the date above. Final pricing may vary based on unforeseen conditions discovered during work. A 50% deposit is required to begin work.';
-
-      doc.fontSize(9)
-        .fillColor('#333333')
-        .text(terms, 50, yPosition + 15, { width: 500 });
-
-      // Notes Section
-      if (estimateData.notes) {
-        yPosition += 60;
-        doc.fontSize(10)
-          .fillColor('#000000')
-          .text('NOTES:', 50, yPosition, { underline: true });
-
-        doc.fontSize(9)
-          .fillColor('#333333')
-          .text(estimateData.notes, 50, yPosition + 15, { width: 500 });
+      // ── Terms ─────────────────────────────────────────────────────────────
+      const terms = estimateData.terms
+        || settings.estimates_legal_disclaimer
+        || 'Estimate valid 30 days. A 50% deposit is required to begin work. Final pricing may vary based on conditions discovered during work.';
+      y += 14;
+      if (y < 690) {
+        doc.fontSize(9).fillColor('#000').font('Helvetica-Bold').text('TERMS & CONDITIONS:', 50, y);
+        doc.fontSize(8).fillColor('#64748b').font('Helvetica').text(terms, 50, y + 13, { width: 512 });
       }
 
-      // Footer
-      doc.fontSize(8)
-        .fillColor('#666666')
-        .text(
-          'This is an estimate only. Actual costs may vary.',
-          50,
-          doc.page.height - 100,
-          { align: 'center' }
-        )
-        .text(
-          'Please contact us with any questions about this estimate.',
-          50,
-          doc.page.height - 85,
-          { align: 'center' }
-        );
+      // ── Footer ────────────────────────────────────────────────────────────
+      drawFooter(doc, settings, 1, 1);
 
-      // Finalize PDF
       doc.end();
-
-      stream.on('finish', () => {
-        resolve(outputPath);
-      });
-
-      stream.on('error', (error) => {
-        reject(error);
-      });
-    } catch (error) {
-      reject(error);
-    }
+      stream.on('finish', () => resolve(outputPath));
+      stream.on('error', reject);
+    } catch (err) { reject(err); }
   });
 }
 

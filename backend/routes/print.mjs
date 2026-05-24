@@ -2,6 +2,12 @@ import express from 'express';
 import db from '../db.js';
 import printService from '../services/printService.js';
 
+async function getSettings() {
+  try {
+    return await db.get('SELECT * FROM company_settings WHERE id = 1') || {};
+  } catch { return {}; }
+}
+
 const router = express.Router();
 
 // POST /api/print/invoice/:id
@@ -24,9 +30,8 @@ router.post('/invoice/:id', async (req, res, next) => {
       [id]
     );
 
-    // Generate PDF
-    const result = await printService.printInvoice(invoice, client, lineItems);
-
+    const settings = await getSettings();
+    const result = await printService.printInvoice(invoice, client, lineItems, settings);
     res.json(result);
   } catch (error) {
     console.error('Print invoice error:', error);
@@ -54,9 +59,8 @@ router.post('/estimate/:id', async (req, res, next) => {
       [id]
     );
 
-    // Generate PDF
-    const result = await printService.printEstimate(estimate, client, lineItems);
-
+    const settings = await getSettings();
+    const result = await printService.printEstimate(estimate, client, lineItems, settings);
     res.json(result);
   } catch (error) {
     console.error('Print estimate error:', error);
