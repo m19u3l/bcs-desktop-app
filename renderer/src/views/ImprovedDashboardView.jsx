@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { dashboardAPI, notesAPI, emailAPI, mediaAPI } from '../api-client';
+import { dashboardAPI, notesAPI, emailAPI, mediaAPI, companySettingsAPI } from '../api-client';
 import { useAPI } from '../hooks/useAPI';
 import MediaUploader from '../components/MediaUploader';
 import '../styles/DashboardView.css';
@@ -34,7 +34,8 @@ export default function ImprovedDashboardView({ onNavigate }) {
   const [emails, setEmails] = useState([]);
   const [loadingEmails, setLoadingEmails] = useState(false);
 
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing,       setRefreshing]       = useState(false);
+  const [companySettings,  setCompanySettings]  = useState({});
 
   useEffect(() => {
     loadDashboardData();
@@ -43,7 +44,7 @@ export default function ImprovedDashboardView({ onNavigate }) {
   const loadDashboardData = async () => {
     try {
       setLoadingData(true);
-      const [transactions, activity, revenue, upcoming, payments, pastDue, notesList] = await Promise.all([
+      const [transactions, activity, revenue, upcoming, payments, pastDue, notesList, settings] = await Promise.all([
         dashboardAPI.getRecentTransactions(),
         dashboardAPI.getRecentActivity(),
         dashboardAPI.getRevenueOverview(),
@@ -51,6 +52,7 @@ export default function ImprovedDashboardView({ onNavigate }) {
         dashboardAPI.getRecentPayments(),
         dashboardAPI.getPastDueInvoices(),
         notesAPI.getAll(),
+        companySettingsAPI.get().catch(() => ({})),
       ]);
 
       setRecentTransactions(transactions);
@@ -60,6 +62,7 @@ export default function ImprovedDashboardView({ onNavigate }) {
       setRecentPayments(payments);
       setPastDueInvoices(pastDue);
       setNotes(notesList);
+      setCompanySettings(settings || {});
 
       // Load emails separately (non-blocking)
       loadEmails();
@@ -179,36 +182,54 @@ export default function ImprovedDashboardView({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* BIG Building Care Solutions Branding Header */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-10 mb-8">
-        <div className="text-center">
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tight">
-            BUILDING CARE SOLUTIONS
-          </h1>
-          <p className="text-2xl text-blue-100 font-semibold mb-2">
-            We Take the Stress Out of Restoration
-          </p>
-          <div className="flex justify-center items-center space-x-8 mt-6 text-white">
-            <div className="flex items-center space-x-2">
-              <span className="text-xl">📍</span>
-              <span className="text-sm font-medium">8889 Caminito Plaza Centro, San Diego, CA 92122</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xl">📞</span>
-              <span className="text-sm font-medium">858-573-7849</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xl">✉️</span>
-              <span className="text-sm font-medium">m19u3l@sd-bcs.com</span>
+      {/* Company Branding Header */}
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-6 mb-6">
+        <div className="flex items-center justify-between">
+
+          {/* Logo + name */}
+          <div className="flex items-center gap-5">
+            {companySettings.logo_url ? (
+              <img
+                src={companySettings.logo_url}
+                alt="Company logo"
+                className="h-16 w-16 object-contain rounded-xl bg-white/10 p-1"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-xl bg-white/20 flex items-center justify-center text-3xl font-black text-white select-none">
+                {(companySettings.company_name || 'BCS').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-black text-white tracking-tight leading-tight">
+                {companySettings.company_name || 'Building Care Solutions'}
+              </h1>
+              <p className="text-blue-100 text-sm font-medium mt-0.5">
+                We Take the Stress Out of Restoration
+              </p>
+              {companySettings.license_number && (
+                <p className="text-blue-200 text-xs mt-0.5">Lic. #{companySettings.license_number}</p>
+              )}
             </div>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="mt-6 bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors disabled:opacity-50"
-          >
-            {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Dashboard'}
-          </button>
+
+          {/* Contact info + refresh */}
+          <div className="text-right">
+            <div className="text-white text-xs space-y-1 mb-3">
+              {(companySettings.address_line1 || companySettings.city) && (
+                <p>{[companySettings.address_line1, companySettings.city, companySettings.state].filter(Boolean).join(', ')}</p>
+              )}
+              {companySettings.phone && <p>{companySettings.phone}</p>}
+              {companySettings.email && <p>{companySettings.email}</p>}
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {refreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+
         </div>
       </div>
 
