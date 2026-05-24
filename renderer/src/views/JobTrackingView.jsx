@@ -168,7 +168,7 @@ export const JobTrackingView = () => {
     <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold text-gray-800">Job Tracking</h1>
+          <h1 className="text-base font-bold text-gray-800">Job Tracker</h1>
           <span className="text-xs text-gray-400">{jobTrackings.length} jobs</span>
         </div>
         <button
@@ -200,7 +200,7 @@ export const JobTrackingView = () => {
           setIsModalOpen(false);
           resetForm();
         }}
-        title={editingTracking ? 'Edit Job Tracking' : 'Add New Job Tracking'}
+        title={editingTracking ? 'Edit Job Tracker' : 'Add New Job Tracker'}
       >
         <form onSubmit={handleSubmit}>
           <Input

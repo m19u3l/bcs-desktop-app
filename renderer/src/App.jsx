@@ -161,7 +161,7 @@ function App() {
     { id: 'resources',         label: 'BCS Equipment Inventory',      Icon: Archive,          help: 'Combined view of equipment, materials, and vendors. Manage all your company assets in one place.' },
     { id: 'remdryout',         label: 'Remediation – Dryout',         Icon: Wind,             help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
     { id: 'remrecon',          label: 'Remediation – Reconstruction', Icon: Hammer,           help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },
-    { id: 'jobtracking',       label: 'Job Tracking',                 Icon: Navigation2,      help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
+    { id: 'jobtracking',       label: 'Job Tracker',                 Icon: Navigation2,      help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
     { id: 'reports',           label: 'Reports',                      Icon: TrendingUp,       help: 'Generate business reports: revenue, job completion, employee performance, and more. Export to PDF/Excel.' },
     { id: 'messaging',         label: 'Bulk Messaging',               Icon: MessageSquare,    help: 'Send SMS or email to multiple clients at once. Create templates for common notifications.' },
     { id: 'quicksms',          label: 'Quick SMS',                    Icon: Send,             help: 'Send individual text messages to clients. Quick communication without opening full messaging.' },
