@@ -46,21 +46,44 @@ function createWindow() {
 }
 
 function startBackendServer() {
-  // Start the Express backend server
   const serverPath = path.join(__dirname, 'backend', 'server.mjs');
 
   backendProcess = spawn('node', [serverPath], {
     cwd: path.join(__dirname, 'backend'),
     env: { ...process.env },
-    stdio: 'inherit'
+    stdio: 'inherit',
+    detached: false,
   });
 
   backendProcess.on('error', (err) => {
     console.error('Failed to start backend server:', err);
   });
 
-  backendProcess.on('exit', (code) => {
-    console.log(`Backend server exited with code ${code}`);
+  backendProcess.on('exit', (code, signal) => {
+    console.log(`Backend server exited with code ${code} signal ${signal}`);
+    // Auto-restart if it crashes unexpectedly (not killed by us)
+    if (code !== null && code !== 0 && !app.isQuitting) {
+      console.log('Restarting backend server in 2s...');
+      setTimeout(startBackendServer, 2000);
+    }
+  });
+}
+
+function waitForBackend(maxWait = 15000) {
+  const http = require('http');
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      http.get('http://localhost:3000/health', (res) => {
+        if (res.statusCode === 200) { resolve(true); return; }
+        retry();
+      }).on('error', retry);
+    };
+    const retry = () => {
+      if (Date.now() - start > maxWait) { resolve(false); return; }
+      setTimeout(check, 400);
+    };
+    check();
   });
 }
 
@@ -72,19 +95,18 @@ function stopBackendServer() {
 }
 
 // App lifecycle events
-app.whenReady().then(() => {
-  // Start backend server
+app.whenReady().then(async () => {
+  app.isQuitting = false;
   startBackendServer();
 
-  // Wait a bit for server to start before creating window
-  setTimeout(() => {
-    createWindow();
-  }, 1500);
+  console.log('Waiting for backend to be ready...');
+  const ready = await waitForBackend(15000);
+  console.log(ready ? 'Backend ready — opening window.' : 'Backend timeout — opening anyway.');
+
+  createWindow();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
@@ -96,6 +118,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  app.isQuitting = true;
   stopBackendServer();
 });
 
