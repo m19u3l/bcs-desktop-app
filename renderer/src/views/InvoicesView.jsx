@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { invoicesAPI, clientsAPI } from '../api-client';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Card } from '../components';
 import { generatePrintDocument, printDocument, LEGAL_DISCLAIMERS } from '../utils/printTemplates';
@@ -210,7 +212,7 @@ Building Care Solutions
     const message = `Invoice ${viewingInvoice.invoice_number} is ready. Amount: $${parseFloat(viewingInvoice.amount).toFixed(2)}. Due: ${new Date(viewingInvoice.due_date).toLocaleDateString()}`;
     
     try {
-      const response = await fetch('http://localhost:3000/api/sms/invoice', {
+      const response = await fetch(`${API_BASE}/sms/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -36,6 +36,7 @@ import ReportsView from './views/ReportsView';
 import MessagingView from './views/MessagingView';
 import QuickSMSView from './views/QuickSMSView';
 import PaymentsView from './views/PaymentsView';
+import ServiceRequestsView from './views/ServiceRequestsView';
 import SanDiegoEstimatorView from './views/SanDiegoEstimatorView';
 import CompetitorPricingView from './views/CompetitorPricingView';
 import SketchView from './views/SketchView';
@@ -227,6 +228,7 @@ function App() {
     {
       title: 'Communication',
       items: [
+        { id: 'servicerequests', label: 'Service Requests', Icon: MessageSquare, help: 'View and manage incoming service requests from the website.' },
         { id: 'messaging', label: 'Bulk Messaging', Icon: MessageSquare, help: 'Send SMS or email to multiple clients at once with templates.' },
         { id: 'quicksms',  label: 'Quick SMS',      Icon: Send,          help: 'Send an individual text to any client instantly.' },
       ],
@@ -407,6 +409,7 @@ function App() {
       case 'jobtracking': return <JobTrackingView />;
       case 'reports': return <ReportsView />;
       case 'quotegenerator': return <EnhancedQuoteGeneratorView />;
+      case 'servicerequests': return <ServiceRequestsView />;
       case 'messaging': return <MessagingView />;
       case 'quicksms': return <QuickSMSView />;
       case 'companysettings': return <CompanySettingsView />;
@@ -443,11 +446,11 @@ function App() {
           style={{ width: sidebarCollapsed ? 80 : sidebarWidth }}
         >
 
-          <div className={`p-6 border-b ${theme.sidebarBorder}`}>
+          <div className={`px-5 py-4 border-b ${theme.sidebarBorder}`}>
             {!sidebarCollapsed && (
               <div>
-                <h1 className={`text-lg font-semibold text-gray-300 uppercase tracking-wider`}>
-                  Navigation
+                <h1 className={`text-sm font-bold text-blue-100 uppercase tracking-widest`}>
+                  Building Care Solutions
                 </h1>
               </div>
             )}
@@ -460,7 +463,7 @@ function App() {
 
           {/* Global Search Box */}
           {!sidebarCollapsed && (
-            <div className="p-4 relative">
+            <div className="px-4 py-2.5 relative">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -469,7 +472,7 @@ function App() {
                   value={searchQuery}
                   onChange={(e) => handleGlobalSearch(e.target.value)}
                   onFocus={() => searchQuery.length >= 2 && setShowGlobalSearch(true)}
-                  className="w-full pl-10 pr-10 py-2 rounded-lg bg-slate-800 text-gray-100 border border-slate-600 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-10 py-2 rounded-lg bg-[#0a1828] text-blue-50 border border-[#1e3a5f] placeholder-blue-300/30 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {searchQuery && (
                   <button
@@ -487,7 +490,7 @@ function App() {
 
               {/* Global Search Results Dropdown */}
               {showGlobalSearch && globalSearchResults.length > 0 && (
-                <div className="absolute left-4 right-4 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-4 right-4 top-full mt-1 bg-[#0d1f3c] border border-[#1e3a5f] rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
                   {globalSearchResults.map((result, index) => (
                     <button
                       key={index}
@@ -497,7 +500,7 @@ function App() {
                         setSearchQuery('');
                         setGlobalSearchResults([]);
                       }}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-700 border-b border-slate-700 last:border-0 flex items-center gap-3"
+                      className="w-full text-left px-4 py-3 hover:bg-[#1a3a5c] border-b border-[#1e3a5f] last:border-0 flex items-center gap-3"
                     >
                       {result.NavIcon
                         ? <result.NavIcon size={18} className="text-gray-400 flex-shrink-0" />
@@ -521,11 +524,11 @@ function App() {
             </div>
           )}
 
-          <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-700">
+          <nav className="flex-1 overflow-y-auto py-1 scrollbar-thin scrollbar-thumb-[#1e3a5f]">
             {(searchQuery.length >= 2 ? [{ title: 'Results', items: filteredNavigation }] : navSections).map((section) => (
-              <div key={section.title} className="mb-2">
+              <div key={section.title} className="mb-0.5">
                 {!sidebarCollapsed && (
-                  <h2 className="text-xs uppercase tracking-wider text-zinc-500 px-4 pt-3 pb-1 font-semibold">
+                  <h2 className="text-xs uppercase tracking-wider text-blue-300/50 px-4 pt-2 pb-0.5 font-semibold">
                     {section.title}
                   </h2>
                 )}
@@ -533,7 +536,7 @@ function App() {
                   <div key={item.id} className="relative group">
                     <button
                       onClick={() => handleNavigation(item.id)}
-                      className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-all duration-150 rounded-lg mx-2 border-l-2 ${
+                      className={`w-full text-left px-4 py-1.5 flex items-center gap-3 transition-all duration-150 rounded-lg mx-2 border-l-2 ${
                         currentView === item.id
                           ? `bg-gradient-to-r ${theme.activeMenuBg} shadow-md ${theme.activeMenuShadow} ${theme.activeMenuBorder}`
                           : `border-transparent ${theme.hoverMenuBg}`
@@ -544,7 +547,7 @@ function App() {
                       <item.Icon size={17} className="flex-shrink-0 opacity-75" />
                       {!sidebarCollapsed && (
                         <>
-                          <span className="font-medium text-sm leading-relaxed flex-1">{item.label}</span>
+                          <span className="font-medium text-sm leading-tight flex-1 truncate">{item.label}</span>
                           <span
                             onClick={(e) => {
                               e.stopPropagation();

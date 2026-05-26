@@ -56,12 +56,15 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const fields = ['client_id', 'work_order_id', 'invoice_number', 'amount', 'status', 'due_date', 'description'];
+    const fields = ['client_id', 'work_order_id', 'invoice_number', 'amount', 'total_amount', 'status', 'due_date', 'description', 'notes', 'payment_terms'];
     const values = fields.map(f => data[f] ?? null);
+
+    // Auto-set paid_date when marking paid; clear it otherwise
+    const paidDate = data.status === 'paid' ? "date('now')" : 'NULL';
     values.push(id);
 
     await db.run(
-      `UPDATE invoices SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`,
+      `UPDATE invoices SET ${fields.map(f => `${f} = ?`).join(', ')}, paid_date = ${paidDate}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       values
     );
 

@@ -4,6 +4,8 @@ import LineItemEditor from '../components/LineItemEditor';
 import PriceListSearchModal from '../components/PriceListSearchModal';
 import AttachmentsPanel from '../components/AttachmentsPanel';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '${API_BASE}';
+
 export default function EstimateDetailsView({ estimateId, onBack }) {
   const [estimate, setEstimate] = useState(null);
   const [lineItems, setLineItems] = useState([]);
@@ -60,14 +62,14 @@ export default function EstimateDetailsView({ estimateId, onBack }) {
     try {
       if (editingItem) {
         // Update existing
-        await fetch(`http://localhost:3000/api/estimates/${estimateId}/line-items/${editingItem.id}`, {
+        await fetch(`${API_BASE}/estimates/${estimateId}/line-items/${editingItem.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(itemData)
         });
       } else {
         // Add new
-        await fetch(`http://localhost:3000/api/estimates/${estimateId}/line-items`, {
+        await fetch(`${API_BASE}/estimates/${estimateId}/line-items`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(itemData)
@@ -87,7 +89,7 @@ export default function EstimateDetailsView({ estimateId, onBack }) {
     if (!confirm('Delete this line item?')) return;
 
     try {
-      await fetch(`http://localhost:3000/api/estimates/${estimateId}/line-items/${itemId}`, {
+      await fetch(`${API_BASE}/estimates/${estimateId}/line-items/${itemId}`, {
         method: 'DELETE'
       });
       await loadEstimate();
@@ -101,7 +103,7 @@ export default function EstimateDetailsView({ estimateId, onBack }) {
     try {
       setTaxRate(newRate);
       await estimatesAPI.update(estimateId, { ...estimate, tax_rate: newRate });
-      await fetch(`http://localhost:3000/api/estimates/${estimateId}/recalculate`, {
+      await fetch(`${API_BASE}/estimates/${estimateId}/recalculate`, {
         method: 'POST'
       });
       await loadEstimate();

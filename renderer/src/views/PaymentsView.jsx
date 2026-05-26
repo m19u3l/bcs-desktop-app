@@ -17,7 +17,7 @@ const invoicesAPI = {
 };
 
 export default function PaymentsView() {
-  const { data: payments, loading, error, refresh, create, update, remove } = useCRUD(paymentsAPI);
+  const { items: payments, loading, error, fetchAll: refresh, create, update, remove } = useCRUD(paymentsAPI);
   const [invoices, setInvoices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
@@ -30,8 +30,8 @@ export default function PaymentsView() {
     notes: ''
   });
 
-  // Load invoices for dropdown
   useEffect(() => {
+    refresh();
     loadInvoices();
   }, []);
 

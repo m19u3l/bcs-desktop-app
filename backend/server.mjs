@@ -63,6 +63,7 @@ import competitorPricingRouter from './routes/competitor-pricing.mjs';
 import rsMeansRouter from './routes/rsmeans.mjs';
 import companiesRouter from './routes/companies.mjs';
 import sketchRouter from './routes/sketch.mjs';
+import serviceRequestsRouter from './routes/service-requests.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -83,6 +84,12 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve the embeddable service-request form (open to all origins for iframe embedding)
+app.use('/service-request', cors({ origin: '*' }), express.static(path.join(__dirname, 'public'), { index: 'service-request.html' }));
+app.get('/service-request', cors({ origin: '*' }), (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'service-request.html'));
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -148,6 +155,7 @@ app.use('/api/ai', aiRouter);
 app.use('/api/competitor-pricing', competitorPricingRouter);
 app.use('/api/rsmeans', rsMeansRouter);
 app.use('/api/companies', companiesRouter);
+app.use('/api/service-requests', serviceRequestsRouter);
 
 // Start server
 app.listen(PORT, () => {

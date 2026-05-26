@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 /**
  * Price List Search Modal
  * Searchable modal to browse and select items from the price list database
@@ -33,7 +35,7 @@ export default function PriceListSearchModal({ isOpen, onClose, onSelectItem }) 
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/price-lists/items/categories');
+      const response = await fetch(`${API_BASE}/price-lists/items/categories`);
       const data = await response.json();
       setCategories(data);
     } catch (err) {
@@ -50,7 +52,7 @@ export default function PriceListSearchModal({ isOpen, onClose, onSelectItem }) 
       if (selectedCategory) params.append('category', selectedCategory);
       params.append('limit', '100');
 
-      const response = await fetch(`http://localhost:3000/api/price-lists/items/search?${params}`);
+      const response = await fetch(`${API_BASE}/price-lists/items/search?${params}`);
       const data = await response.json();
       setItems(data);
     } catch (err) {

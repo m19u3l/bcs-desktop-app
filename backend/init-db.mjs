@@ -624,6 +624,26 @@ CREATE TABLE IF NOT EXISTS logs (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Service Requests table (public intake form submissions)
+CREATE TABLE IF NOT EXISTS service_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT NOT NULL,
+  address TEXT,
+  service_type TEXT NOT NULL,
+  preferred_date DATE,
+  preferred_time TEXT,
+  description TEXT,
+  status TEXT DEFAULT 'new',
+  client_id INTEGER,
+  work_order_id INTEGER,
+  calendar_event_id INTEGER,
+  source TEXT DEFAULT 'website',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Dry Out Jobs view
 CREATE VIEW IF NOT EXISTS dry_out_jobs AS SELECT * FROM remediation_dryout;
 

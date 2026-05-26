@@ -108,19 +108,27 @@ router.post('/', async (req, res, next) => {
     `, [invoice_id]);
 
     const totalPaid = paymentsSum?.total_paid || 0;
+    const invoiceTotal = invoice.total_amount > 0 ? invoice.total_amount : invoice.amount;
 
     // Update invoice status based on payment
     let newStatus = 'pending';
-    if (totalPaid >= invoice.amount) {
+    if (totalPaid >= invoiceTotal) {
       newStatus = 'paid';
     } else if (totalPaid > 0) {
       newStatus = 'partial';
     }
 
-    await db.run(
-      'UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [newStatus, invoice_id]
-    );
+    if (newStatus === 'paid') {
+      await db.run(
+        'UPDATE invoices SET status = ?, paid_date = date(\'now\'), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [newStatus, invoice_id]
+      );
+    } else {
+      await db.run(
+        'UPDATE invoices SET status = ?, paid_date = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [newStatus, invoice_id]
+      );
+    }
 
     // Get the newly created payment
     const newPayment = await db.get(
@@ -168,17 +176,25 @@ router.put('/:id', async (req, res, next) => {
       `, [invoice_id]);
 
       const totalPaid = paymentsSum?.total_paid || 0;
+      const invoiceTotal = invoice.total_amount > 0 ? invoice.total_amount : invoice.amount;
       let newStatus = 'pending';
-      if (totalPaid >= invoice.amount) {
+      if (totalPaid >= invoiceTotal) {
         newStatus = 'paid';
       } else if (totalPaid > 0) {
         newStatus = 'partial';
       }
 
-      await db.run(
-        'UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        [newStatus, invoice_id]
-      );
+      if (newStatus === 'paid') {
+        await db.run(
+          'UPDATE invoices SET status = ?, paid_date = date(\'now\'), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [newStatus, invoice_id]
+        );
+      } else {
+        await db.run(
+          'UPDATE invoices SET status = ?, paid_date = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [newStatus, invoice_id]
+        );
+      }
     }
 
     const updatedPayment = await db.get('SELECT * FROM payments WHERE id = ?', [id]);
@@ -209,17 +225,25 @@ router.delete('/:id', async (req, res, next) => {
     `, [payment.invoice_id]);
 
     const totalPaid = paymentsSum?.total_paid || 0;
+    const invoiceTotal = invoice.total_amount > 0 ? invoice.total_amount : invoice.amount;
     let newStatus = 'pending';
-    if (totalPaid >= invoice.amount) {
+    if (totalPaid >= invoiceTotal) {
       newStatus = 'paid';
     } else if (totalPaid > 0) {
       newStatus = 'partial';
     }
 
-    await db.run(
-      'UPDATE invoices SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [newStatus, payment.invoice_id]
-    );
+    if (newStatus === 'paid') {
+      await db.run(
+        'UPDATE invoices SET status = ?, paid_date = date(\'now\'), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [newStatus, payment.invoice_id]
+      );
+    } else {
+      await db.run(
+        'UPDATE invoices SET status = ?, paid_date = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [newStatus, payment.invoice_id]
+      );
+    }
 
     res.json({ message: 'Payment deleted successfully', id });
   } catch (error) {

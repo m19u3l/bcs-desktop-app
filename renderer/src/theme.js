@@ -4,10 +4,10 @@
 export const themes = {
   default: {
     name: 'Default Blue',
-    // Sidebar colors
-    sidebarBg: 'from-slate-900 to-slate-950',
-    sidebarText: 'text-gray-100',
-    sidebarBorder: 'border-slate-800',
+    // Sidebar colors — deep enterprise navy (Procore/ServiceTitan style)
+    sidebarBg: 'from-[#0c1d36] to-[#071020]',
+    sidebarText: 'text-blue-50',
+    sidebarBorder: 'border-[#1e3a5f]',
 
     // Active menu item
     activeMenuBg: 'from-blue-600 to-blue-700',
@@ -15,7 +15,7 @@ export const themes = {
     activeMenuShadow: 'shadow-blue-500/50',
 
     // Hover states
-    hoverMenuBg: 'hover:bg-slate-800/60',
+    hoverMenuBg: 'hover:bg-[#1a3a5c]/60',
 
     // Brand colors
     brandGradient: 'from-blue-400 to-cyan-400',
@@ -40,8 +40,8 @@ export const themes = {
     cardHeaderText: 'text-white',
 
     // Company info section
-    companyInfoBg: 'bg-slate-900/30',
-    companyInfoBorder: 'border-slate-800',
+    companyInfoBg: 'bg-[#071020]/60',
+    companyInfoBorder: 'border-[#1e3a5f]',
 
     // User avatar
     avatarBg: 'from-blue-500 to-cyan-500',
