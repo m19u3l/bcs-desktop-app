@@ -209,7 +209,7 @@ ${selectedLog.notes || 'N/A'}
 ---
 Building Care Solutions
 8889 Caminito Plaza Centro, San Diego, CA 92122
-858-573-7849 | m19u3l@sd-bcs.com
+858-737-8499 | m19u3l@sd-bcs.com
     `);
 
     window.location.href = `mailto:?subject=${subject}&body=${body}`;

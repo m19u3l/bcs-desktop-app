@@ -3,11 +3,11 @@ import React, { useState } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const BCS_TEMPLATES = [
-  { label: 'Appointment Reminder', text: 'Hi, this is Building Care Solutions. Your appointment is scheduled for tomorrow. Reply STOP to opt out. 858-573-7849' },
-  { label: 'Estimate Ready', text: 'Your estimate from Building Care Solutions is ready for review. Please call 858-573-7849 or visit our office. Reply STOP to opt out.' },
-  { label: 'Job Complete', text: 'Great news! Your job with Building Care Solutions is complete. Thank you for choosing us. Questions? Call 858-573-7849. Reply STOP to opt out.' },
-  { label: 'Invoice Due', text: 'A payment is due on your Building Care Solutions invoice. Please call 858-573-7849 to arrange payment. Reply STOP to opt out.' },
-  { label: 'Follow Up', text: 'Hi from Building Care Solutions! Following up on your recent service. We hope everything is great. Call 858-573-7849 with any questions. Reply STOP to opt out.' },
+  { label: 'Appointment Reminder', text: 'Hi, this is Building Care Solutions. Your appointment is scheduled for tomorrow. Reply STOP to opt out. 858-737-8499' },
+  { label: 'Estimate Ready', text: 'Your estimate from Building Care Solutions is ready for review. Please call 858-737-8499 or visit our office. Reply STOP to opt out.' },
+  { label: 'Job Complete', text: 'Great news! Your job with Building Care Solutions is complete. Thank you for choosing us. Questions? Call 858-737-8499. Reply STOP to opt out.' },
+  { label: 'Invoice Due', text: 'A payment is due on your Building Care Solutions invoice. Please call 858-737-8499 to arrange payment. Reply STOP to opt out.' },
+  { label: 'Follow Up', text: 'Hi from Building Care Solutions! Following up on your recent service. We hope everything is great. Call 858-737-8499 with any questions. Reply STOP to opt out.' },
 ];
 
 export default function QuickSMSView() {

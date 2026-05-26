@@ -157,7 +157,7 @@ Just let me know your email provider and I'll set it up!
 ## 📞 **Your Contact Information**
 Based on the app:
 - **Email:** m19u3l@sd-bcs.com
-- **Phone:** 858-573-7849
+- **Phone:** 858-737-8499
 - **Address:** 8889 Caminito Plaza Centro, San Diego, CA 92122
 
 ---

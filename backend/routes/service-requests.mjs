@@ -6,7 +6,7 @@ import { sendSMS } from '../services/smsService.js';
 const router = express.Router();
 
 // Owner phone — receives all new request notifications
-const OWNER_PHONE = process.env.OWNER_PHONE || '+18585737849';
+const OWNER_PHONE = process.env.OWNER_PHONE || '+18587378499';
 // Additional alert phones (comma-separated in env, e.g. "+16195550001,+16195550002")
 const ALERT_PHONES = (process.env.ALERT_PHONES || '')
   .split(',').map(p => p.trim()).filter(Boolean);
@@ -139,7 +139,7 @@ router.post('/submit', publicCors, async (req, res) => {
       `We received your request for ${service_type}.\n` +
       (preferred_date ? `Preferred date: ${dateStr} at ${timeStr}\n` : '') +
       `We will call you shortly to confirm your appointment.\n\n` +
-      `Questions? Call 858-573-7849\nReply STOP to opt out.`;
+      `Questions? Call 858-737-8499 or (866) 982-4796\nReply STOP to opt out.`;
 
     // Fire SMS without blocking the response
     const smsJobs = ALL_ALERT_PHONES.map(p => sendSMS(p, ownerMsg).catch(e => console.error('SMS alert failed:', e)));
@@ -157,7 +157,7 @@ router.post('/submit', publicCors, async (req, res) => {
     });
   } catch (err) {
     console.error('Error processing service request:', err);
-    res.status(500).json({ error: 'Failed to process request. Please call 858-573-7849.' });
+    res.status(500).json({ error: 'Failed to process request. Please call 858-737-8499 or (866) 982-4796.' });
   }
 });
 

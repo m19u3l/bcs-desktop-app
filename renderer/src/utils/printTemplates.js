@@ -8,7 +8,8 @@ const COMPANY_INFO = {
   tagline: 'Professional Water Damage Restoration & Reconstruction',
   address: '8889 Caminito Plaza Centro',
   city: 'San Diego, CA 92122',
-  phone: '858-573-7849',
+  phone: '858-737-8499',
+  tollfree: '(866) 982-4796',
   email: 'm19u3l@sd-bcs.com',
   website: 'www.sd-bcs.com',
   license: 'CA License #1234567',
@@ -551,7 +552,7 @@ export function generatePrintDocument(type, data) {
               <div class="tagline">${COMPANY_INFO.tagline}</div>
               <div class="contact">
                 <span class="contact-item">📍 ${COMPANY_INFO.address}, ${COMPANY_INFO.city}</span>
-                <span class="contact-item">📞 ${COMPANY_INFO.phone}</span>
+                <span class="contact-item">📞 ${COMPANY_INFO.phone} | ${COMPANY_INFO.tollfree}</span>
                 <span class="contact-item">📧 ${COMPANY_INFO.email}</span>
               </div>
               <div class="contact" style="margin-top: 8px;">
@@ -592,7 +593,7 @@ export function generatePrintDocument(type, data) {
             <p>Serving San Diego County with Pride</p>
             <p>
               This document was generated electronically and is valid without signature.<br>
-              For questions, please contact us at ${COMPANY_INFO.phone}
+              For questions, please contact us at ${COMPANY_INFO.phone} or ${COMPANY_INFO.tollfree}
             </p>
           </div>
         </div>

@@ -530,7 +530,7 @@ async function createAllTables() {
     // Insert default company settings if not exists
     await db.run(`
       INSERT OR IGNORE INTO company_settings (id, company_name, business_name, phone, email, address_line1, city, state, zip)
-      VALUES (1, 'Building Care Solutions', 'Building Care Solutions', '858-573-7849', 'm19u3l@sd-bcs.com', '8889 Caminito Plaza Centro', 'San Diego', 'CA', '92122')
+      VALUES (1, 'Building Care Solutions', 'Building Care Solutions', '858-737-8499', 'm19u3l@sd-bcs.com', '8889 Caminito Plaza Centro', 'San Diego', 'CA', '92122')
     `);
 
     console.log('\n🎉 All tables created successfully!');

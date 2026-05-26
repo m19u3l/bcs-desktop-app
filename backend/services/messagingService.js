@@ -184,8 +184,8 @@ function generateMarketingEmailHTML(clientName, message) {
               <!-- CTA Button (optional) -->
               <tr>
                 <td style="padding: 0 30px 40px 30px; text-align: center;">
-                  <a href="tel:858-573-7849" style="display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: bold;">
-                    📞 Call Us: 858-573-7849
+                  <a href="tel:858-737-8499" style="display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: bold;">
+                    📞 Call Us: 858-737-8499
                   </a>
                 </td>
               </tr>
@@ -203,7 +203,7 @@ function generateMarketingEmailHTML(clientName, message) {
                           📍 8889 Caminito Plaza Centro, San Diego, CA 92122
                         </p>
                         <p style="margin: 0 0 5px 0;">
-                          📞 858-573-7849
+                          📞 858-737-8499
                         </p>
                         <p style="margin: 0 0 5px 0;">
                           ✉️ m19u3l@sd-bcs.com
@@ -241,7 +241,7 @@ export const emailTemplates = {
   },
   emergency: {
     subject: '🚨 24/7 Emergency Service Available',
-    message: `Water damage? Fire damage? We\'re here to help 24/7!\n\nBuilding Care Solutions offers emergency restoration services whenever you need us. Don\'t wait - every minute counts in an emergency.\n\nCall us now: 858-573-7849`
+    message: `Water damage? Fire damage? We\'re here to help 24/7!\n\nBuilding Care Solutions offers emergency restoration services whenever you need us. Don\'t wait - every minute counts in an emergency.\n\nCall us now: 858-737-8499`
   }
 };
 
