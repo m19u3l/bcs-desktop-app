@@ -4,6 +4,7 @@ import { useCRUD } from '../hooks/useAPI';
 import { Table, Button, Modal, Input, Select, Card } from '../components';
 import { generatePrintDocument, printDocument, LEGAL_DISCLAIMERS } from '../utils/printTemplates';
 import AttachmentsPanel from '../components/AttachmentsPanel';
+import PaymentModal from '../components/PaymentModal';
 
 export const InvoicesView = ({ initialClient }) => {
   const { items: invoices, loading, error, fetchAll, create, update, remove } = useCRUD(invoicesAPI);
@@ -12,6 +13,8 @@ export const InvoicesView = ({ initialClient }) => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState(null);
   const [editingInvoice, setEditingInvoice] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [payingInvoice, setPayingInvoice] = useState(null);
   const [formData, setFormData] = useState({
     client_id: '',
     invoice_number: '',
@@ -95,6 +98,17 @@ export const InvoicesView = ({ initialClient }) => {
   const handleEditFromView = () => {
     setIsViewModalOpen(false);
     handleEdit(viewingInvoice);
+  };
+
+  const handlePayNow = () => {
+    setPayingInvoice(viewingInvoice);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setIsViewModalOpen(false);
+    fetchAll();
   };
 
   const handlePrint = () => {
@@ -374,6 +388,11 @@ Building Care Solutions
             </div>
 
             <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3">
+              {viewingInvoice?.status !== 'paid' && viewingInvoice?.status !== 'cancelled' && (
+                <button onClick={handlePayNow} className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold">
+                  💳 Pay Now
+                </button>
+              )}
               <button onClick={handlePrint} className="flex-1 px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium">
                 🖨️ Print
               </button>
@@ -467,6 +486,14 @@ Building Care Solutions
           </div>
         </form>
       </Modal>
+
+      {isPaymentModalOpen && payingInvoice && (
+        <PaymentModal
+          invoice={payingInvoice}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 };
