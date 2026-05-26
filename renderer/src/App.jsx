@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   LayoutDashboard, CalendarDays, Droplets, Users, ClipboardList,
   FileText, FileBarChart2, BarChart2, Receipt, CreditCard,
@@ -40,6 +40,7 @@ import SanDiegoEstimatorView from './views/SanDiegoEstimatorView';
 import CompetitorPricingView from './views/CompetitorPricingView';
 import SketchView from './views/SketchView';
 import AssembliesView from './views/AssembliesView';
+import Screensaver, { IDLE_TIMEOUT_MS } from './components/Screensaver';
 import './App.css';
 
 function App() {
@@ -59,8 +60,28 @@ function App() {
   const [helpTooltip, setHelpTooltip] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [aiStatus, setAiStatus] = useState('');
+  const [showScreensaver, setShowScreensaver] = useState(false);
+  const [commandPalette, setCommandPalette] = useState(false);
+  const [cmdQuery, setCmdQuery] = useState('');
+  const idleTimerRef = useRef(null);
   const mediaRecorderRef = React.useRef(null);
   const audioChunksRef = React.useRef([]);
+
+  const resetIdleTimer = useCallback(() => {
+    if (showScreensaver) return;
+    clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => setShowScreensaver(true), IDLE_TIMEOUT_MS);
+  }, [showScreensaver]);
+
+  useEffect(() => {
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetIdleTimer));
+      clearTimeout(idleTimerRef.current);
+    };
+  }, [resetIdleTimer]);
 
   // Local Whisper-powered Voice Recognition
   const startListening = async () => {
@@ -123,6 +144,14 @@ function App() {
       if (e.code === 'Space' && e.ctrlKey) {
         startListening();
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPalette(p => !p);
+        setCmdQuery('');
+      }
+      if (e.key === 'Escape') {
+        setCommandPalette(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -140,35 +169,78 @@ function App() {
 
   const theme = getTheme(currentTheme, isDarkMode);
 
-  const navigation = [
-    { id: 'dashboard',         label: 'Dashboard',                    Icon: LayoutDashboard,  help: 'Overview of your business metrics, recent activity, invoices, and quick access to all features. Start here to see the big picture.' },
-    { id: 'calendar',          label: 'Calendar',                     Icon: CalendarDays,     help: 'Schedule and view appointments, job deadlines, and team availability. Drag and drop to reschedule events.' },
-    { id: 'moisturelogs',      label: 'Moisture Logs',                Icon: Droplets,         help: 'Record and track moisture readings for dry-out jobs. Monitor progress with daily logs and generate reports for insurance.' },
-    { id: 'clients',           label: 'Clients',                      Icon: Users,            help: 'Manage customer information, contact details, and job history. Add new clients and view their complete service record.' },
-    { id: 'workorders',        label: 'Work Orders',                  Icon: ClipboardList,    help: 'Create and manage job assignments. Track status, assign employees, and link to estimates and invoices.' },
-    { id: 'estimates',         label: 'Homeowner Estimates',          Icon: FileText,         help: 'Create detailed cost estimates for homeowner jobs. Include labor, materials, and equipment. Convert approved estimates to work orders.' },
-    { id: 'sdestimator',       label: 'Insurance Estimator',          Icon: FileBarChart2,    help: 'Full Xactimate-mirrored estimator for insurance claims. Browse 150+ line items across all trades, apply O&P, and export professional PDFs.' },
-    { id: 'sketch',            label: 'Sketch Engine',                Icon: PenTool,          help: 'Draw 2D floorplans room-by-room. Mark damage types and auto-generate Xactimate-style estimates from geometry — area, perimeter, volume.' },
-    { id: 'assemblies',        label: 'Assemblies',                   Icon: Layers,           help: 'Build reusable line item packages (assemblies). One click adds a full Water Damage or Mold package to any estimate.' },
-    { id: 'competitorpricing', label: 'Competitor Pricing',           Icon: BarChart2,        help: 'Compare BCS rates vs SERVPRO, Paul Davis, and ServiceMaster for the San Diego market. Know your competitive position on every trade.' },
-    { id: 'invoices',          label: 'Invoices',                     Icon: Receipt,          help: 'Generate and send invoices to clients. Track payment status, send reminders, and record payments received.' },
-    { id: 'payments',          label: 'Payments',                     Icon: CreditCard,       help: 'Process payments via Square or Stripe. View payment history and reconcile with invoices.' },
-    { id: 'changeorders',      label: 'Change Orders',                Icon: GitMerge,         help: 'Document scope changes during a job. Track additional costs and get client approval for modifications.' },
-    { id: 'pricelist',         label: 'Price List',                   Icon: Tag,              help: 'Manage your standard pricing for services, labor rates, and materials. Build quotes directly from the catalog.' },
-    { id: 'employees',         label: 'Employees',                    Icon: HardHat,          help: 'Manage your team members, their roles, certifications, and availability. Track hours and assign to jobs.' },
-    { id: 'equipment',         label: 'Equipment',                    Icon: Wrench,           help: 'Track tools and machinery inventory. Monitor which equipment is deployed on job sites vs available.' },
-    { id: 'materials',         label: 'Materials',                    Icon: Package,          help: 'Manage building materials inventory. Track stock levels, costs, and usage across jobs.' },
-    { id: 'vendors',           label: 'Vendors',                      Icon: Building2,        help: 'Manage supplier and subcontractor directory. Filter by trade, search by name, and track contact details.' },
-    { id: 'services',          label: 'Services',                     Icon: Briefcase,        help: 'Define the types of services your company offers. Set default pricing and descriptions for each service.' },
-    { id: 'resources',         label: 'BCS Equipment Inventory',      Icon: Archive,          help: 'Combined view of equipment, materials, and vendors. Manage all your company assets in one place.' },
-    { id: 'remdryout',         label: 'Remediation – Dryout',         Icon: Wind,             help: 'Manage water damage drying jobs. Track equipment placement, moisture readings, and drying progress.' },
-    { id: 'remrecon',          label: 'Remediation – Reconstruction', Icon: Hammer,           help: 'Manage reconstruction projects after water/fire damage. Track phases, materials, and completion.' },
-    { id: 'jobtracking',       label: 'Job Tracker',                 Icon: Navigation2,      help: 'Real-time tracking of all active jobs. View status updates, timelines, and team assignments.' },
-    { id: 'reports',           label: 'Reports',                      Icon: TrendingUp,       help: 'Generate business reports: revenue, job completion, employee performance, and more. Export to PDF/Excel.' },
-    { id: 'messaging',         label: 'Bulk Messaging',               Icon: MessageSquare,    help: 'Send SMS or email to multiple clients at once. Create templates for common notifications.' },
-    { id: 'quicksms',          label: 'Quick SMS',                    Icon: Send,             help: 'Send individual text messages to clients. Quick communication without opening full messaging.' },
-    { id: 'companysettings',   label: 'Settings',                     Icon: Settings,         help: 'Configure company info, branding, payment integration, legal disclaimers, and app preferences.' },
+  const navSections = [
+    {
+      title: 'Operations',
+      items: [
+        { id: 'dashboard',    label: 'Dashboard',    Icon: LayoutDashboard, help: 'Overview of business metrics, recent activity, invoices, and quick access to all features.' },
+        { id: 'calendar',     label: 'Calendar',     Icon: CalendarDays,    help: 'Schedule appointments, job deadlines, and team availability.' },
+        { id: 'jobtracking',  label: 'Job Tracker',  Icon: Navigation2,     help: 'Real-time tracking of all active jobs, status updates, and team assignments.' },
+        { id: 'clients',      label: 'Clients',      Icon: Users,           help: 'Manage customer information, contact details, and full job history.' },
+        { id: 'workorders',   label: 'Work Orders',  Icon: ClipboardList,   help: 'Create and manage job assignments. Assign employees and link to estimates and invoices.' },
+      ],
+    },
+    {
+      title: 'Estimating',
+      items: [
+        { id: 'estimates',    label: 'Homeowner Estimates',  Icon: FileText,      help: 'Create detailed cost estimates for homeowner jobs. Convert to work orders.' },
+        { id: 'sdestimator',  label: 'Insurance Estimator',  Icon: FileBarChart2, help: 'Xactimate-mirrored estimator with 2,000+ line items, O&P, and PDF export.' },
+        { id: 'sketch',       label: 'Sketch Engine',        Icon: PenTool,       help: 'Draw 2D floorplans and auto-generate Xactimate-style estimates from geometry.' },
+        { id: 'assemblies',   label: 'Assemblies',           Icon: Layers,        help: 'Reusable line item packages — add a full Water Damage bundle in one click.' },
+        { id: 'changeorders', label: 'Change Orders',        Icon: GitMerge,      help: 'Document scope changes and track additional costs with client approval.' },
+      ],
+    },
+    {
+      title: 'Restoration',
+      items: [
+        { id: 'remdryout',    label: 'Remediation – Dryout',          Icon: Wind,    help: 'Manage water damage drying jobs. Track equipment and moisture progress.' },
+        { id: 'remrecon',     label: 'Remediation – Reconstruction',  Icon: Hammer,  help: 'Manage reconstruction projects after water or fire damage.' },
+        { id: 'moisturelogs', label: 'Moisture Logs',                 Icon: Droplets,help: 'Record daily moisture readings and generate insurance adjuster reports.' },
+      ],
+    },
+    {
+      title: 'Financial',
+      items: [
+        { id: 'invoices',  label: 'Invoices',  Icon: Receipt,    help: 'Generate and send invoices. Track payment status and record payments.' },
+        { id: 'payments',  label: 'Payments',  Icon: CreditCard, help: 'Process payments via Square or Stripe. View payment history.' },
+        { id: 'reports',   label: 'Reports',   Icon: TrendingUp, help: 'Revenue, job completion, and performance reports. Export to PDF/Excel.' },
+      ],
+    },
+    {
+      title: 'Resources',
+      items: [
+        { id: 'pricelist',  label: 'Price List',           Icon: Tag,       help: 'Manage standard pricing for services, labor rates, and materials.' },
+        { id: 'employees',  label: 'Employees',            Icon: HardHat,   help: 'Manage team members, roles, certifications, and availability.' },
+        { id: 'equipment',  label: 'Equipment',            Icon: Wrench,    help: 'Track tools and machinery — deployed vs available.' },
+        { id: 'materials',  label: 'Materials',            Icon: Package,   help: 'Manage building materials inventory and usage across jobs.' },
+        { id: 'vendors',    label: 'Vendors',              Icon: Building2, help: 'Supplier and subcontractor directory, filtered by trade.' },
+        { id: 'services',   label: 'Services',             Icon: Briefcase, help: 'Define service offerings with default pricing and descriptions.' },
+        { id: 'resources',  label: 'Equipment Inventory',  Icon: Archive,   help: 'Combined view of equipment, materials, and vendors.' },
+      ],
+    },
+    {
+      title: 'Intelligence',
+      items: [
+        { id: 'competitorpricing', label: 'Competitor Pricing', Icon: BarChart2, help: 'BCS rates vs SERVPRO, Paul Davis, ServiceMaster — San Diego market.' },
+      ],
+    },
+    {
+      title: 'Communication',
+      items: [
+        { id: 'messaging', label: 'Bulk Messaging', Icon: MessageSquare, help: 'Send SMS or email to multiple clients at once with templates.' },
+        { id: 'quicksms',  label: 'Quick SMS',      Icon: Send,          help: 'Send an individual text to any client instantly.' },
+      ],
+    },
+    {
+      title: 'Admin',
+      items: [
+        { id: 'companysettings', label: 'Settings', Icon: Settings, help: 'Company info, branding, payment integration, and app preferences.' },
+      ],
+    },
   ];
+
+  // Flat list for search + renderView + topbar label lookup
+  const navigation = navSections.flatMap(s => s.items);
 
   const handleNavigation = (viewId, clientContext = null) => {
     setCurrentView(viewId);
@@ -358,6 +430,13 @@ function App() {
 
   return (
     <AppProvider>
+      {showScreensaver && (
+        <Screensaver onDismiss={() => {
+          setShowScreensaver(false);
+          clearTimeout(idleTimerRef.current);
+          idleTimerRef.current = setTimeout(() => setShowScreensaver(true), IDLE_TIMEOUT_MS);
+        }} />
+      )}
       <div className={`flex h-screen ${theme.mainBg}`} data-theme={isDarkMode ? 'dark' : 'light'}>
         <aside
           className={`bg-gradient-to-b ${theme.sidebarBg} ${theme.sidebarText} flex flex-col shadow-2xl relative ${sidebarCollapsed ? 'w-20' : ''}`}
@@ -442,49 +521,53 @@ function App() {
             </div>
           )}
 
-          <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-thumb-gray-700">
-            {filteredNavigation.map((item) => (
-              <div key={item.id} className="relative group">
-                <button
-                  onClick={() => handleNavigation(item.id)}
-                  className={`w-full text-left px-8 py-4 flex items-center gap-4 transition-all duration-200 border-l-4 ${
-                    currentView === item.id
-                      ? `bg-gradient-to-r ${theme.activeMenuBg} shadow-lg ${theme.activeMenuShadow} ${theme.activeMenuBorder}`
-                      : `border-transparent ${theme.hoverMenuBg}`
-                  }`}
-                  title={sidebarCollapsed ? item.label : ''}
-                >
-                  <item.Icon size={20} className="flex-shrink-0 opacity-80" />
-                  {!sidebarCollapsed && (
-                    <>
-                      <span className="font-medium text-sm leading-relaxed flex-1">{item.label}</span>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setHelpTooltip(helpTooltip === item.id ? null : item.id);
-                        }}
-                        className="text-xs opacity-30 hover:opacity-100 transition-opacity cursor-help w-5 h-5 flex items-center justify-center rounded-full border border-gray-500 hover:border-gray-300"
-                      >
-                        ?
-                      </span>
-                    </>
-                  )}
-                </button>
-                {/* Help Tooltip */}
-                {helpTooltip === item.id && !sidebarCollapsed && (
-                  <div className="absolute left-full top-0 ml-2 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl p-4 z-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="text-sm font-bold text-white">{item.label}</h4>
-                      <button
-                        onClick={() => setHelpTooltip(null)}
-                        className="text-gray-400 hover:text-white text-xs"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-300 leading-relaxed">{item.help}</p>
-                  </div>
+          <nav className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-700">
+            {(searchQuery.length >= 2 ? [{ title: 'Results', items: filteredNavigation }] : navSections).map((section) => (
+              <div key={section.title} className="mb-2">
+                {!sidebarCollapsed && (
+                  <h2 className="text-xs uppercase tracking-wider text-zinc-500 px-4 pt-3 pb-1 font-semibold">
+                    {section.title}
+                  </h2>
                 )}
+                {section.items.map((item) => (
+                  <div key={item.id} className="relative group">
+                    <button
+                      onClick={() => handleNavigation(item.id)}
+                      className={`w-full text-left px-4 py-2 flex items-center gap-3 transition-all duration-150 rounded-lg mx-2 border-l-2 ${
+                        currentView === item.id
+                          ? `bg-gradient-to-r ${theme.activeMenuBg} shadow-md ${theme.activeMenuShadow} ${theme.activeMenuBorder}`
+                          : `border-transparent ${theme.hoverMenuBg}`
+                      }`}
+                      style={{ width: 'calc(100% - 16px)' }}
+                      title={sidebarCollapsed ? item.label : ''}
+                    >
+                      <item.Icon size={17} className="flex-shrink-0 opacity-75" />
+                      {!sidebarCollapsed && (
+                        <>
+                          <span className="font-medium text-sm leading-relaxed flex-1">{item.label}</span>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHelpTooltip(helpTooltip === item.id ? null : item.id);
+                            }}
+                            className="text-xs opacity-20 hover:opacity-80 transition-opacity cursor-help w-4 h-4 flex items-center justify-center rounded-full border border-gray-600 hover:border-gray-300"
+                          >
+                            ?
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    {helpTooltip === item.id && !sidebarCollapsed && (
+                      <div className="absolute left-full top-0 ml-2 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl p-4 z-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-bold text-white">{item.label}</h4>
+                          <button onClick={() => setHelpTooltip(null)} className="text-gray-400 hover:text-white text-xs">✕</button>
+                        </div>
+                        <p className="text-xs text-gray-300 leading-relaxed">{item.help}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </nav>
@@ -570,78 +653,255 @@ function App() {
         </aside>
 
         <main className={`flex-1 flex flex-col overflow-hidden ${theme.mainBg}`}>
-{/* Top Navigation Bar with Back Button */}
-<div className={`${theme.topBarBg} border-b ${theme.topBarBorder} px-6 py-4 flex items-center gap-4`}>
-  <button
-    onClick={handleBack}
-    disabled={viewHistory.length <= 1}
-    className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
-      viewHistory.length > 1
-        ? 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
-        : 'bg-gray-50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
-    }`}
-    title="Go back"
-  >
-    <span className="text-xl">←</span>
-  </button>
-  
-  <div className="flex-1">
-    {(() => {
-      const nav = navigation.find(n => n.id === currentView);
-      return (
-        <h1 className={`text-3xl font-bold ${theme.topBarText} flex items-center gap-3`}>
-          {nav?.Icon && <nav.Icon size={28} className="text-blue-600 flex-shrink-0" />}
-          <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            {nav?.label || 'Dashboard'}
-          </span>
-        </h1>
-      );
-    })()}
-  </div>
 
-  {/* Claude AI Voice & Text Control */}
-  <div className="flex items-center gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 max-w-xl flex-1">
-    <input
-      type="text"
-      placeholder="Type a command or use the mic..."
-      className="flex-1 bg-transparent border-none focus:ring-0 text-sm dark:text-gray-200"
-      onKeyDown={async (e) => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-          const text = e.target.value;
-          e.target.value = '';
-          setAiStatus(`Processing: "${text}"`);
-          const result = await window.electronAPI.runCommand(text);
-          setAiStatus(result.message);
-          setTimeout(() => setAiStatus(''), 5000);
-        }
-      }}
-    />
-    {aiStatus && (
-      <span className="text-xs font-medium text-blue-600 dark:text-blue-400 truncate max-w-[150px]">
-        {aiStatus}
-      </span>
-    )}
-    <button
-      onClick={startListening}
-      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
-        isListening 
-          ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-blue-600 text-white hover:bg-blue-700'
-      }`}
-      title="Voice Command (Ctrl+Space)"
-    >
-      <span className="text-lg">{isListening ? '🛑' : '🎤'}</span>
-    </button>
-  </div>
+          {/* ── Enterprise Top Toolbar ── */}
+          <header className="h-14 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center justify-between shrink-0 shadow-sm">
 
-  <div className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-  </div>
-</div>
+            {/* LEFT: back + breadcrumb + quick actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBack}
+                disabled={viewHistory.length <= 1}
+                title="Go back"
+                className={`w-8 h-8 rounded flex items-center justify-center transition-colors text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 ${viewHistory.length <= 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+              >
+                <span className="text-base">←</span>
+              </button>
+
+              {(() => {
+                const nav = navigation.find(n => n.id === currentView);
+                return (
+                  <div className="flex items-center gap-2">
+                    {nav?.Icon && <nav.Icon size={16} className="text-blue-600 flex-shrink-0" />}
+                    <span className="font-semibold text-sm text-zinc-800 dark:text-zinc-100">{nav?.label || 'Dashboard'}</span>
+                  </div>
+                );
+              })()}
+
+              <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-700 mx-1" />
+
+              <button
+                onClick={() => { setCommandPalette(true); setCmdQuery(''); }}
+                className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+                title="Command Palette (Ctrl+K)"
+              >
+                ⌘ Command
+              </button>
+              <button
+                onClick={() => handleNavigation('workorders')}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"
+              >
+                <span>+</span> New Project
+              </button>
+              <button
+                onClick={() => handleNavigation('reports')}
+                className="flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+              >
+                Reports
+              </button>
+              <button
+                onClick={() => handleNavigation('sdestimator')}
+                className="flex items-center gap-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+              >
+                Estimator
+              </button>
+            </div>
+
+            {/* RIGHT: AI bar + bell + user */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-3 py-1.5">
+                <input
+                  type="text"
+                  placeholder="AI command… (Ctrl+Space for mic)"
+                  className="bg-transparent border-none focus:ring-0 text-xs text-zinc-700 dark:text-zinc-300 placeholder-zinc-400 w-52 outline-none"
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      const text = e.target.value;
+                      e.target.value = '';
+                      setAiStatus(`Processing…`);
+                      const result = await window.electronAPI?.runCommand(text);
+                      setAiStatus(result?.message || '');
+                      setTimeout(() => setAiStatus(''), 4000);
+                    }
+                  }}
+                />
+                {aiStatus && <span className="text-xs text-blue-500 truncate max-w-[100px]">{aiStatus}</span>}
+                <button
+                  onClick={startListening}
+                  title="Voice Command (Ctrl+Space)"
+                  className={`w-6 h-6 rounded-full flex items-center justify-center transition-all text-xs ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                  {isListening ? '■' : '🎤'}
+                </button>
+              </div>
+
+              {/* Notifications bell */}
+              <button className="relative w-8 h-8 rounded flex items-center justify-center text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="w-8 h-8 rounded flex items-center justify-center text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-sm"
+                title="Toggle dark mode"
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+
+              {/* User avatar */}
+              {currentUser && (
+                <div className="flex items-center gap-2 border-l border-zinc-200 dark:border-zinc-700 pl-3">
+                  <button
+                    onClick={() => handleNavigation('companysettings')}
+                    className={`w-8 h-8 rounded-full bg-gradient-to-br ${theme.avatarBg} flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition-opacity`}
+                    title="Settings"
+                  >
+                    {(currentUser.full_name || currentUser.username || 'U').charAt(0).toUpperCase()}
+                  </button>
+                  <div className="hidden sm:block">
+                    <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-100 leading-none">{currentUser.full_name || currentUser.username}</p>
+                    <p className="text-xs text-zinc-400 leading-none mt-0.5">Senior Estimator</p>
+                  </div>
+                  <button
+                    onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setIsAuthenticated(false); setCurrentUser(null); }}
+                    className="text-xs text-zinc-400 hover:text-red-500 transition-colors ml-1"
+                    title="Logout"
+                  >
+                    ⏏
+                  </button>
+                </div>
+              )}
+            </div>
+          </header>
+          {/* ── Workspace Tabs ── */}
+          {(() => {
+            const workspaceTabs = [
+              { label: 'Projects',   id: 'workorders'   },
+              { label: 'Estimates',  id: 'estimates'    },
+              { label: 'Invoices',   id: 'invoices'     },
+              { label: 'Dry-Out',    id: 'remdryout'    },
+              { label: 'Sketch',     id: 'sketch'       },
+              { label: 'Estimator',  id: 'sdestimator'  },
+              { label: 'Reports',    id: 'reports'      },
+            ];
+            const activeTab = workspaceTabs.find(t => t.id === currentView);
+            return (
+              <div className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center gap-0 overflow-x-auto shrink-0">
+                {workspaceTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleNavigation(tab.id)}
+                    className={`px-4 py-2.5 text-xs border-b-2 whitespace-nowrap transition-colors font-medium ${
+                      currentView === tab.id
+                        ? 'border-blue-600 text-blue-600 bg-white dark:bg-zinc-800'
+                        : 'border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-white dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* ── Command Palette ── */}
+          {commandPalette && (
+            <div
+              className="absolute inset-0 bg-black/40 flex items-start justify-center pt-24 z-50"
+              onClick={e => e.target === e.currentTarget && setCommandPalette(false)}
+            >
+              <div className="w-[620px] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                <div className="p-4 border-b border-zinc-200 dark:border-zinc-700">
+                  <input
+                    autoFocus
+                    value={cmdQuery}
+                    onChange={e => setCmdQuery(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') setCommandPalette(false);
+                    }}
+                    placeholder="Search jobs, estimates, invoices, or type a command…"
+                    className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm"
+                  />
+                </div>
+                <div className="max-h-96 overflow-auto">
+                  {/* Quick Actions */}
+                  {!cmdQuery && (
+                    <div className="p-2">
+                      <p className="text-xs text-zinc-400 uppercase tracking-wider px-3 py-2 font-semibold">Quick Actions</p>
+                      {[
+                        { label: '+ New Work Order',      icon: '📋', nav: 'workorders'   },
+                        { label: '+ Create Estimate',     icon: '📄', nav: 'estimates'    },
+                        { label: '+ New Invoice',         icon: '💰', nav: 'invoices'     },
+                        { label: '+ Start Dry-Out Job',   icon: '💧', nav: 'remdryout'    },
+                        { label: '+ Open Sketch Engine',  icon: '✏️',  nav: 'sketch'       },
+                        { label: '+ Insurance Estimate',  icon: '🏗️',  nav: 'sdestimator'  },
+                        { label: '⚙ Company Settings',   icon: '⚙️',  nav: 'companysettings' },
+                      ].map(a => (
+                        <button
+                          key={a.label}
+                          onClick={() => { handleNavigation(a.nav); setCommandPalette(false); }}
+                          className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm flex items-center gap-3 text-zinc-700 dark:text-zinc-300"
+                        >
+                          <span className="text-base w-5">{a.icon}</span>
+                          {a.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Filtered nav items */}
+                  {cmdQuery && (() => {
+                    const q = cmdQuery.toLowerCase();
+                    const matches = navigation.filter(n => n.label.toLowerCase().includes(q));
+                    return matches.length > 0 ? (
+                      <div className="p-2">
+                        <p className="text-xs text-zinc-400 uppercase tracking-wider px-3 py-2 font-semibold">Navigation</p>
+                        {matches.map(n => (
+                          <button
+                            key={n.id}
+                            onClick={() => { handleNavigation(n.id); setCommandPalette(false); setCmdQuery(''); }}
+                            className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm flex items-center gap-3 text-zinc-700 dark:text-zinc-300"
+                          >
+                            <n.Icon size={15} className="text-zinc-400 flex-shrink-0" />
+                            {n.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-400 text-center py-8">No results for "{cmdQuery}"</p>
+                    );
+                  })()}
+                </div>
+                <div className="border-t border-zinc-200 dark:border-zinc-700 px-4 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-zinc-400">↑↓ navigate · Enter select · Esc close</span>
+                  <button onClick={() => setCommandPalette(false)} className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-3 py-1 border border-zinc-200 dark:border-zinc-700 rounded hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto">
             {renderView()}
           </div>
+
+          {/* Bottom Status Bar */}
+          <footer className="h-8 bg-zinc-900 text-zinc-400 flex items-center justify-between px-5 text-xs shrink-0">
+            <div className="flex items-center gap-5">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                Connected
+              </span>
+              <span>Pricing: 2,198 items</span>
+              <span>San Diego County</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>BCS Desktop v1.0.0</span>
+            </div>
+          </footer>
         </main>
       </div>
     </AppProvider>

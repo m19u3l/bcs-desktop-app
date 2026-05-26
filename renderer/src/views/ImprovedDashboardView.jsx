@@ -1,729 +1,280 @@
 import { useEffect, useState } from 'react';
-import { dashboardAPI, notesAPI, emailAPI, mediaAPI, companySettingsAPI } from '../api-client';
+import { dashboardAPI, notesAPI, companySettingsAPI } from '../api-client';
 import { useAPI } from '../hooks/useAPI';
-import MediaUploader from '../components/MediaUploader';
-import '../styles/DashboardView.css';
 
-/**
- * Improved Dashboard View - Building Care Solutions
- * Professional 2-column card layout with real data and navigation
- * Miguel - m19u3l@sd-bcs.com
- */
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
 export default function ImprovedDashboardView({ onNavigate }) {
-  const { data: stats, loading, error, execute: fetchStats } = useAPI(
-    dashboardAPI.getStats,
-    true
-  );
+  const { data: stats, loading, execute: fetchStats } = useAPI(dashboardAPI.getStats, true);
 
-  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [workOrders, setWorkOrders]       = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [revenueOverview, setRevenueOverview] = useState([]);
-  const [upcomingInvoices, setUpcomingInvoices] = useState([]);
   const [recentPayments, setRecentPayments] = useState([]);
   const [pastDueInvoices, setPastDueInvoices] = useState([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const [notes, setNotes]                 = useState([]);
+  const [companySettings, setCompanySettings] = useState({});
+  const [selectedRow, setSelectedRow]     = useState(null);
+  const [filterText, setFilterText]       = useState('');
+  const [newNote, setNewNote]             = useState('');
+  const [refreshing, setRefreshing]       = useState(false);
 
-  const [notes, setNotes] = useState([]);
-  const [newNoteTitle, setNewNoteTitle] = useState('');
-  const [newNoteContent, setNewNoteContent] = useState('');
-  const [showNoteForm, setShowNoteForm] = useState(false);
+  useEffect(() => { loadAll(); }, []);
 
-  const [showDocPromptModal, setShowDocPromptModal] = useState(false);
-  const [selectedClientForDoc, setSelectedClientForDoc] = useState(null);
-
-  const [emails, setEmails] = useState([]);
-  const [loadingEmails, setLoadingEmails] = useState(false);
-
-  const [refreshing,       setRefreshing]       = useState(false);
-  const [companySettings,  setCompanySettings]  = useState({});
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadAll = async () => {
     try {
-      setLoadingData(true);
-      const [transactions, activity, revenue, upcoming, payments, pastDue, notesList, settings] = await Promise.all([
-        dashboardAPI.getRecentTransactions(),
-        dashboardAPI.getRecentActivity(),
-        dashboardAPI.getRevenueOverview(),
-        dashboardAPI.getUpcomingInvoices(),
-        dashboardAPI.getRecentPayments(),
-        dashboardAPI.getPastDueInvoices(),
-        notesAPI.getAll(),
+      const [wo, activity, payments, pastDue, notesList, settings] = await Promise.all([
+        fetch(`${API_BASE}/work-orders`).then(r => r.json()).catch(() => []),
+        dashboardAPI.getRecentActivity().catch(() => []),
+        dashboardAPI.getRecentPayments().catch(() => []),
+        dashboardAPI.getPastDueInvoices().catch(() => []),
+        notesAPI.getAll().catch(() => []),
         companySettingsAPI.get().catch(() => ({})),
       ]);
-
-      setRecentTransactions(transactions);
-      setRecentActivity(activity);
-      setRevenueOverview(revenue);
-      setUpcomingInvoices(upcoming);
-      setRecentPayments(payments);
-      setPastDueInvoices(pastDue);
-      setNotes(notesList);
+      setWorkOrders(Array.isArray(wo) ? wo : []);
+      setRecentActivity(Array.isArray(activity) ? activity : []);
+      setRecentPayments(Array.isArray(payments) ? payments : []);
+      setPastDueInvoices(Array.isArray(pastDue) ? pastDue : []);
+      setNotes(Array.isArray(notesList) ? notesList : []);
       setCompanySettings(settings || {});
-
-      // Load emails separately (non-blocking)
-      loadEmails();
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  const loadEmails = async () => {
-    try {
-      setLoadingEmails(true);
-      const inbox = await emailAPI.getInbox(5);
-      setEmails(inbox);
-    } catch (err) {
-      console.error('Error loading emails:', err);
-      setEmails([]); // Set empty on error
-    } finally {
-      setLoadingEmails(false);
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!newNoteTitle.trim() || !newNoteContent.trim()) return;
-
-    try {
-      const newNote = await notesAPI.create({
-        title: newNoteTitle,
-        content: newNoteContent,
-        category: 'general',
-        priority: 'normal'
-      });
-
-      setNotes([newNote, ...notes]);
-      setNewNoteTitle('');
-      setNewNoteContent('');
-      setShowNoteForm(false);
-    } catch (err) {
-      console.error('Error adding note:', err);
-    }
-  };
-
-  const handleDeleteNote = async (noteId) => {
-    try {
-      await notesAPI.delete(noteId);
-      setNotes(notes.filter(note => note.id !== noteId));
-    } catch (err) {
-      console.error('Error deleting note:', err);
+      console.error('Dashboard load error:', err);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    await Promise.all([fetchStats(), loadAll()]);
+    setRefreshing(false);
+  };
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return;
     try {
-      await fetchStats();
-      await loadDashboardData();
-    } finally {
-      setRefreshing(false);
-    }
+      const created = await notesAPI.create({ title: newNote, content: '', category: 'general', priority: 'normal' });
+      setNotes([created, ...notes]);
+      setNewNote('');
+    } catch {}
   };
 
-  const handleMediaUpload = async (files) => {
-    try {
-      const result = await mediaAPI.upload(files);
-      console.log('Files uploaded successfully:', result);
-      // Optionally show a success message to the user
-      alert(`Successfully uploaded ${result.files.length} file(s)`);
-    } catch (err) {
-      console.error('Error uploading files:', err);
-      alert('Failed to upload files. Please try again.');
-    }
+  const fmt$ = v => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v || 0);
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+
+  const d = stats || {};
+  const activeJobs     = d.active_jobs      ?? workOrders.filter(w => w.status === 'in_progress').length;
+  const pendingEst     = d.pending_estimates ?? 0;
+  const invoicesDue    = d.pending_invoices  ?? pastDueInvoices.length;
+  const openClaims     = d.open_claims       ?? workOrders.filter(w => w.status !== 'completed').length;
+
+  const filtered = workOrders.filter(wo =>
+    !filterText ||
+    wo.work_order_number?.toLowerCase().includes(filterText.toLowerCase()) ||
+    wo.client_name?.toLowerCase().includes(filterText.toLowerCase()) ||
+    wo.title?.toLowerCase().includes(filterText.toLowerCase()) ||
+    wo.description?.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const statusBadge = (s) => {
+    const map = {
+      completed:   'bg-emerald-100 text-emerald-700',
+      in_progress: 'bg-blue-100 text-blue-700',
+      pending:     'bg-yellow-100 text-yellow-700',
+      cancelled:   'bg-zinc-100 text-zinc-500',
+    };
+    return map[s] || 'bg-zinc-100 text-zinc-600';
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount || 0);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
+  const statCards = [
+    { label: 'Active Jobs',        value: activeJobs,   color: 'text-blue-600',    bg: 'bg-blue-50',    nav: 'jobtracking' },
+    { label: 'Pending Estimates',  value: pendingEst,   color: 'text-amber-600',   bg: 'bg-amber-50',   nav: 'estimates'   },
+    { label: 'Invoices Due',       value: invoicesDue,  color: 'text-red-600',     bg: 'bg-red-50',     nav: 'invoices'    },
+    { label: 'Open Work Orders',   value: openClaims,   color: 'text-purple-600',  bg: 'bg-purple-50',  nav: 'workorders'  },
+  ];
 
   if (loading && !stats) {
     return (
-      <div className="dashboard-container">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading Building Care Solutions dashboard...</p>
+      <div className="h-full flex items-center justify-center bg-zinc-50">
+        <div className="text-center text-zinc-400">
+          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm">Loading dashboard…</p>
         </div>
       </div>
     );
   }
-
-  if (error) {
-    return (
-      <div className="dashboard-container">
-        <div className="error-state">
-          <h2>⚠️ Error Loading Dashboard</h2>
-          <p>{error}</p>
-          <button onClick={handleRefresh} className="btn btn-primary">
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const dashboardData = stats || {};
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Company Branding Header */}
-      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-6 mb-6">
-        <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col bg-zinc-50 overflow-hidden">
 
-          {/* Logo + name */}
-          <div className="flex items-center gap-5">
-            {companySettings.logo_url ? (
-              <img
-                src={companySettings.logo_url}
-                alt="Company logo"
-                className="h-16 w-16 object-contain rounded-xl bg-white/10 p-1"
-              />
-            ) : (
-              <div className="h-16 w-16 rounded-xl bg-white/20 flex items-center justify-center text-3xl font-black text-white select-none">
-                {(companySettings.company_name || 'BCS').slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h1 className="text-2xl font-black text-white tracking-tight leading-tight">
-                {companySettings.company_name || 'Building Care Solutions'}
-              </h1>
-              <p className="text-blue-100 text-sm font-medium mt-0.5">
-                We Take the Stress Out of Restoration
-              </p>
-              {companySettings.license_number && (
-                <p className="text-blue-200 text-xs mt-0.5">Lic. #{companySettings.license_number}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Contact info + refresh */}
-          <div className="text-right">
-            <div className="text-white text-xs space-y-1 mb-3">
-              {(companySettings.address_line1 || companySettings.city) && (
-                <p>{[companySettings.address_line1, companySettings.city, companySettings.state].filter(Boolean).join(', ')}</p>
-              )}
-              {companySettings.phone && <p>{companySettings.phone}</p>}
-              {companySettings.email && <p>{companySettings.email}</p>}
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
-          </div>
-
-        </div>
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-4 gap-4 p-4 shrink-0">
+        {statCards.map(card => (
+          <button
+            key={card.label}
+            onClick={() => onNavigate?.(card.nav)}
+            className={`${card.bg} rounded-xl border border-zinc-200 p-4 text-left hover:shadow-md transition-shadow`}
+          >
+            <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">{card.label}</p>
+            <p className={`text-4xl font-bold mt-1 ${card.color}`}>{card.value}</p>
+          </button>
+        ))}
       </div>
 
-      {/* 2-Column Card Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Recent Transactions Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Transactions</h2>
+      {/* ── Main Split: Table + Right Panel ── */}
+      <div className="flex-1 flex overflow-hidden px-4 pb-4 gap-4 min-h-0">
 
-            <div className="space-y-3">
-              <div
-                className="flex justify-between items-center p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500 cursor-pointer hover:bg-blue-100 transition-colors"
-                onClick={() => onNavigate && onNavigate('invoices')}
+        {/* Project Table */}
+        <div className="flex-1 bg-white rounded-xl border border-zinc-200 flex flex-col overflow-hidden shadow-sm">
+          <div className="border-b border-zinc-200 px-4 py-3 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <h2 className="font-semibold text-zinc-800">Active Projects</h2>
+              <span className="text-xs bg-zinc-100 text-zinc-500 px-2 py-0.5 rounded-full">{workOrders.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                value={filterText}
+                onChange={e => setFilterText(e.target.value)}
+                placeholder="Filter projects…"
+                className="border border-zinc-300 rounded px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 w-48"
+              />
+              <button
+                onClick={handleRefresh}
+                className="text-xs text-zinc-500 hover:text-zinc-800 border border-zinc-200 rounded px-2 py-1.5 hover:bg-zinc-50 transition-colors"
               >
-                <span className="font-medium text-gray-700">Total Invoices</span>
-                <span className="text-xl font-bold text-blue-600">
-                  {formatCurrency(dashboardData.totalRevenue)}
-                </span>
-              </div>
+                {refreshing ? '…' : '↻'}
+              </button>
+            </div>
+          </div>
 
-              <div
-                className="flex justify-between items-center p-4 bg-green-50 rounded-lg border-l-4 border-green-500 cursor-pointer hover:bg-green-100 transition-colors"
-                onClick={() => onNavigate && onNavigate('invoices')}
-              >
-                <span className="font-medium text-gray-700">Paid ({dashboardData.paidInvoicesCount || 0})</span>
-                <span className="text-xl font-bold text-green-600">
-                  {formatCurrency(dashboardData.totalRevenue)}
-                </span>
-              </div>
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-50 border-b border-zinc-200 sticky top-0">
+                <tr className="text-left text-xs text-zinc-500 font-medium uppercase tracking-wide">
+                  <th className="px-4 py-2.5">Project ID</th>
+                  <th className="px-4 py-2.5">Client</th>
+                  <th className="px-4 py-2.5">Title</th>
+                  <th className="px-4 py-2.5">Type</th>
+                  <th className="px-4 py-2.5">Status</th>
+                  <th className="px-4 py-2.5">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-zinc-400 text-sm">No projects found</td></tr>
+                ) : filtered.map(wo => (
+                  <tr
+                    key={wo.id}
+                    onClick={() => setSelectedRow(wo)}
+                    className={`border-b border-zinc-100 cursor-pointer transition-colors ${selectedRow?.id === wo.id ? 'bg-blue-50' : 'hover:bg-zinc-50'}`}
+                  >
+                    <td className="px-4 py-3 font-mono text-xs font-medium text-blue-700">{wo.work_order_number || `WO-${wo.id}`}</td>
+                    <td className="px-4 py-3 text-zinc-700">{wo.client_name || '—'}</td>
+                    <td className="px-4 py-3 text-zinc-600 max-w-xs truncate">{wo.title || wo.description || '—'}</td>
+                    <td className="px-4 py-3 text-zinc-500 text-xs">{wo.type || 'General'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge(wo.status)}`}>
+                        {wo.status?.replace('_', ' ') || 'pending'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-zinc-400 text-xs">{fmtDate(wo.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-              <div
-                className="flex justify-between items-center p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500 cursor-pointer hover:bg-yellow-100 transition-colors"
-                onClick={() => onNavigate && onNavigate('invoices')}
-              >
-                <span className="font-medium text-gray-700">Pending ({dashboardData.pendingInvoicesCount || 0})</span>
-                <span className="text-xl font-bold text-yellow-600">
-                  {formatCurrency(dashboardData.pendingRevenue)}
-                </span>
-              </div>
+        {/* ── Right Panel ── */}
+        <div className="w-80 flex flex-col gap-3 overflow-hidden shrink-0">
 
-              <div
-                className="flex justify-between items-center p-4 bg-red-50 rounded-lg border-l-4 border-red-500 cursor-pointer hover:bg-red-100 transition-colors"
-                onClick={() => onNavigate && onNavigate('invoices')}
-              >
-                <span className="font-medium text-gray-700">Past Due ({dashboardData.outstandingInvoiceCount || 0})</span>
-                <span className="text-xl font-bold text-red-600">
-                  {formatCurrency(dashboardData.outstandingInvoiceAmount)}
-                </span>
+          {/* Project Details */}
+          <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm shrink-0">
+            <h3 className="font-semibold text-zinc-800 text-sm mb-3">
+              {selectedRow ? 'Project Details' : 'Select a project'}
+            </h3>
+            {selectedRow ? (
+              <div className="space-y-2.5 text-sm">
+                <Row label="Project ID"   value={selectedRow.work_order_number || `WO-${selectedRow.id}`} mono />
+                <Row label="Client"       value={selectedRow.client_name || '—'} />
+                <Row label="Status"       value={<span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusBadge(selectedRow.status)}`}>{selectedRow.status?.replace('_', ' ') || '—'}</span>} />
+                <Row label="Type"         value={selectedRow.type || 'General'} />
+                <Row label="Address"      value={selectedRow.address || '—'} />
+                <Row label="Created"      value={fmtDate(selectedRow.created_at)} />
+                {selectedRow.amount > 0 && <Row label="Amount" value={fmt$(selectedRow.amount)} />}
+                <div className="pt-2 flex gap-2">
+                  <button onClick={() => onNavigate?.('workorders')} className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded py-1.5 font-medium transition-colors">
+                    Open
+                  </button>
+                  <button onClick={() => onNavigate?.('invoices')} className="flex-1 text-xs bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded py-1.5 font-medium transition-colors">
+                    Invoice
+                  </button>
+                </div>
               </div>
+            ) : (
+              <p className="text-xs text-zinc-400">Click a row in the project table to see details here.</p>
+            )}
+          </div>
 
-              {recentTransactions.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-600 uppercase">Latest Transactions</h3>
-                  {recentTransactions.slice(0, 3).map((txn) => (
-                    <div
-                      key={txn.id}
-                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-                      onClick={() => onNavigate && onNavigate('invoices')}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-gray-800">{txn.invoice_number}</p>
-                          <p className="text-xs text-gray-600">{txn.client_name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">{formatCurrency(txn.amount)}</p>
-                          <p className={`text-xs font-medium ${
-                            txn.status === 'paid' ? 'text-green-600' :
-                            txn.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {txn.status.toUpperCase()}
-                          </p>
-                        </div>
-                      </div>
+          {/* Activity Feed */}
+          <div className="flex-1 bg-white rounded-xl border border-zinc-200 flex flex-col overflow-hidden shadow-sm min-h-0">
+            <div className="border-b border-zinc-200 px-4 py-3 shrink-0">
+              <h3 className="font-semibold text-zinc-800 text-sm">Activity Feed</h3>
+            </div>
+            <div className="flex-1 overflow-auto p-3 space-y-2">
+              {recentActivity.length > 0 ? recentActivity.slice(0, 12).map((a, i) => (
+                <div key={i} className="border border-zinc-100 rounded-lg p-3 hover:bg-zinc-50 transition-colors">
+                  <p className="text-xs font-medium text-zinc-700 leading-snug">{a.description || a.action || 'Activity'}</p>
+                  <p className="text-xs text-zinc-400 mt-1">{a.entity_type || ''} · {fmtDate(a.created_at)}</p>
+                </div>
+              )) : (
+                <>
+                  {[
+                    { text: 'No recent activity yet', sub: 'Actions will appear here' },
+                    ...recentPayments.slice(0, 3).map(p => ({ text: `Payment received: ${fmt$(p.amount)}`, sub: p.client_name || '' })),
+                    ...pastDueInvoices.slice(0, 2).map(inv => ({ text: `Past due: ${inv.invoice_number}`, sub: `${inv.client_name} · ${fmt$(inv.amount)}` })),
+                  ].filter(Boolean).map((item, i) => (
+                    <div key={i} className="border border-zinc-100 rounded-lg p-3">
+                      <p className="text-xs font-medium text-zinc-700">{item.text}</p>
+                      {item.sub && <p className="text-xs text-zinc-400 mt-0.5">{item.sub}</p>}
                     </div>
                   ))}
-                </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Recent Activity Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3
-              className="text-xl font-bold text-gray-800 mb-4 flex items-center cursor-pointer hover:text-blue-600 transition-colors"
-              onClick={() => onNavigate && onNavigate('workorders')}
-            >
-              <span className="text-2xl mr-2">📋</span>
-              Recent Activity
-              <span className="ml-auto text-sm text-gray-500 hover:text-blue-600">View All →</span>
-            </h3>
-            {loadingData ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : recentActivity.length > 0 ? (
-              <div className="space-y-2">
-                {recentActivity.slice(0, 5).map((activity, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={() => onNavigate && onNavigate('workorders')}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">{activity.title || activity.description || 'Work Order'}</p>
-                        <p className="text-sm text-gray-600">{activity.client_name || 'Unknown Client'}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {activity.work_order_number} • {activity.status}
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        activity.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        activity.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {activity.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent activity</p>
-              </div>
-            )}
-          </div>
-
-          {/* Upcoming Invoices Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3
-              className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between cursor-pointer hover:text-blue-600 transition-colors"
-              onClick={() => onNavigate && onNavigate('invoices')}
-            >
-              <span className="flex items-center">
-                <span className="text-2xl mr-2">📄</span>
-                Upcoming Invoices
-              </span>
-              <span className="text-sm font-normal text-gray-500 hover:text-blue-600">Next 30 days →</span>
-            </h3>
-            {loadingData ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : upcomingInvoices.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingInvoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
-                    onClick={() => onNavigate && onNavigate('invoices')}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-semibold text-gray-800">{invoice.invoice_number}</p>
-                        <p className="text-sm text-gray-600">{invoice.client_name}</p>
-                        <p className="text-xs text-gray-500 mt-1">Due: {formatDate(invoice.due_date)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">{formatCurrency(invoice.amount)}</p>
-                        <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded font-medium">
-                          {invoice.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No upcoming invoices</p>
-              </div>
-            )}
-          </div>
-
-          {/* Email Inbox Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                <span className="text-2xl mr-2">📧</span>
-                Inbox
-              </h3>
-              <button
-                onClick={loadEmails}
-                disabled={loadingEmails}
-                className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold disabled:opacity-50"
-              >
-                {loadingEmails ? '⟳' : '🔄'}
-              </button>
+          {/* Quick Notes */}
+          <div className="bg-white rounded-xl border border-zinc-200 p-3 shadow-sm shrink-0">
+            <h3 className="font-semibold text-zinc-800 text-sm mb-2">Quick Notes</h3>
+            <div className="flex gap-2 mb-2">
+              <input
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddNote()}
+                placeholder="Add a note…"
+                className="flex-1 text-xs border border-zinc-200 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button onClick={handleAddNote} className="text-xs bg-blue-600 text-white rounded px-2 py-1.5 hover:bg-blue-700">+</button>
             </div>
-
-            {loadingEmails ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="text-sm text-gray-500 mt-2">Connecting to m19u3l@sd-bcs.com...</p>
-              </div>
-            ) : emails.length > 0 ? (
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {emails.map((email, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-gray-50 border-l-4 border-blue-400 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="font-semibold text-gray-800 text-sm truncate flex-1">
-                        {email.subject || '(No Subject)'}
-                      </p>
-                      <span className="text-xs text-gray-500 ml-2">
-                        {email.date ? new Date(email.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600 truncate">{email.from}</p>
-                    {email.text && (
-                      <p className="text-xs text-gray-500 mt-1 truncate">{email.text.substring(0, 60)}...</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>📭 No emails found</p>
-                <p className="text-xs mt-2">Click refresh to check for new mail</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Quick Notes Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                <span className="text-2xl mr-2">📝</span>
-                Quick Notes
-              </h3>
-              <button
-                onClick={() => setShowNoteForm(!showNoteForm)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
-              >
-                {showNoteForm ? '✕ Cancel' : '+ Add Note'}
-              </button>
-            </div>
-
-            {showNoteForm && (
-              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <input
-                  type="text"
-                  placeholder="Note Title..."
-                  value={newNoteTitle}
-                  onChange={(e) => setNewNoteTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <textarea
-                  placeholder="Note content..."
-                  value={newNoteContent}
-                  onChange={(e) => setNewNoteContent(e.target.value)}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-                <button
-                  onClick={handleAddNote}
-                  disabled={!newNoteTitle.trim() || !newNoteContent.trim()}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Save Note
-                </button>
-              </div>
-            )}
-
-            {loadingData ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : notes.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {notes.slice(0, 10).map((note) => (
-                  <div
-                    key={note.id}
-                    className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-gray-800">{note.title}</h4>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        className="text-red-600 hover:text-red-800 text-sm font-semibold"
-                        title="Delete note"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {new Date(note.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>📝 No notes yet. Click "Add Note" to create one!</p>
-              </div>
-            )}
-          </div>
-
-          {/* Media Upload Card */}
-          <MediaUploader onUpload={handleMediaUpload} />
-
-          {/* Revenue Overview Chart Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2
-              className="text-2xl font-bold text-gray-800 mb-4 cursor-pointer hover:text-blue-600 transition-colors flex items-center justify-between"
-              onClick={() => onNavigate && onNavigate('invoices')}
-            >
-              <span>Revenue Overview</span>
-              <span className="text-sm font-normal text-gray-500 hover:text-blue-600">View Details →</span>
-            </h2>
-            {loadingData ? (
-              <div className="h-64 flex items-center justify-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              </div>
-            ) : revenueOverview.length > 0 ? (
-              <div className="h-64">
-                <div className="h-full flex items-end justify-around bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4">
-                  {revenueOverview.map((data, index) => {
-                    const maxRevenue = Math.max(...revenueOverview.map(d => d.revenue));
-                    const height = (data.revenue / maxRevenue) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center flex-1 mx-1">
-                        <div className="text-xs font-semibold text-gray-700 mb-1">
-                          {formatCurrency(data.revenue)}
-                        </div>
-                        <div
-                          className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
-                          style={{ height: `${height}%`, minHeight: '20px' }}
-                          title={`${data.month}: ${formatCurrency(data.revenue)}`}
-                        ></div>
-                        <div className="text-xs text-gray-600 mt-2">
-                          {new Date(data.month + '-01').toLocaleDateString('en-US', { month: 'short' })}
-                        </div>
-                      </div>
-                    );
-                  })}
+            <div className="space-y-1 max-h-28 overflow-auto">
+              {notes.slice(0, 5).map(n => (
+                <div key={n.id} className="text-xs text-zinc-600 bg-zinc-50 rounded px-2 py-1.5 flex justify-between items-start gap-2">
+                  <span className="truncate">{n.title || n.content}</span>
                 </div>
-              </div>
-            ) : (
-              <div className="h-64 flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
-                <p className="text-gray-500">No revenue data available</p>
-              </div>
-            )}
+              ))}
+              {notes.length === 0 && <p className="text-xs text-zinc-400">No notes yet</p>}
+            </div>
           </div>
 
-          {/* Recent Payments Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3
-              className="text-xl font-bold text-gray-800 mb-4 flex items-center cursor-pointer hover:text-blue-600 transition-colors"
-              onClick={() => onNavigate && onNavigate('invoices')}
-            >
-              <span className="text-2xl mr-2">💰</span>
-              Recent Payments
-              <span className="ml-auto text-sm text-gray-500 hover:text-blue-600">View All →</span>
-            </h3>
-            {loadingData ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              </div>
-            ) : recentPayments.length > 0 ? (
-              <div className="space-y-3">
-                {recentPayments.slice(0, 5).map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="p-3 bg-green-50 rounded-lg border-l-4 border-green-500 hover:bg-green-100 transition-colors cursor-pointer"
-                    onClick={() => onNavigate && onNavigate('invoices')}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-gray-800">{payment.invoice_number}</p>
-                        <p className="text-sm text-gray-600">{payment.client_name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-700">{formatCurrency(payment.amount)}</p>
-                        <p className="text-xs text-gray-500">{formatDate(payment.updated_at)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No recent payments</p>
-              </div>
-            )}
-          </div>
-
-          {/* Past Due Invoices Card */}
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h3
-              className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between cursor-pointer hover:text-red-600 transition-colors"
-              onClick={() => onNavigate && onNavigate('invoices')}
-            >
-              <span className="flex items-center">
-                <span className="text-2xl mr-2">⚠️</span>
-                Past Due Invoices
-                <span className="ml-3 text-sm text-gray-500 hover:text-red-600">View All →</span>
-              </span>
-              {pastDueInvoices.length > 0 && (
-                <span className="text-sm bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
-                  {pastDueInvoices.length}
-                </span>
-              )}
-            </h3>
-            {loadingData ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-              </div>
-            ) : pastDueInvoices.length > 0 ? (
-              <div className="space-y-3">
-                {pastDueInvoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
-                    onClick={() => onNavigate && onNavigate('invoices')}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{invoice.invoice_number}</p>
-                        <p className="text-sm text-gray-700">{invoice.client_name}</p>
-                        <p className="text-xs text-red-600 font-medium mt-1">
-                          {invoice.days_overdue} days overdue
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-red-700">{formatCurrency(invoice.amount)}</p>
-                        <p className="text-xs text-gray-600 mt-1">{formatDate(invoice.due_date)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>✅ No past due invoices</p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* ============================================================================ */}
-      {/* BIDIRECTIONAL ACTIONS OVERLAY POPUP MODAL CONTROL ENGINE                     */}
-      {/* ============================================================================ */}
-      {showDocPromptModal && selectedClientForDoc && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md border border-gray-100">
-            <h3 className="text-xl font-black text-gray-900 mb-1">Document Dispatch Hub</h3>
-            <p className="text-sm text-gray-500 mb-4">Select the operational wrapper target for <strong className="text-gray-800">{selectedClientForDoc.name}</strong>. Demographic tokens populate automatically.</p>
-            
-            <div className="flex flex-col gap-2">
-              <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('estimates', selectedClientForDoc); }}>
-                <span className="block font-bold text-blue-800">📄 Initialize Interactive Estimate / Quote</span>
-                <span className="block text-xs text-blue-600 mt-0.5">Launches design scope sheets pre-filled with client contact records.</span>
-              </button>
-
-              <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('invoices', selectedClientForDoc); }}>
-                <span className="block font-bold text-green-800">💰 Generate Reconciled Pro-Rata Invoice</span>
-                <span className="block text-xs text-green-600 mt-0.5">Executes math engines to scale line totals while burying markups.</span>
-              </button>
-
-              <button className="w-full text-left p-3 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg transition-all"
-                      onClick={() => { setShowDocPromptModal(false); onNavigate && onNavigate('workorders', selectedClientForDoc); }}>
-                <span className="block font-bold text-cyan-800">👷 Dispatch Field Operations Work Order</span>
-                <span className="block text-xs text-cyan-600 mt-0.5">Generates crew labor windows with all financial costs hidden.</span>
-              </button>
-            </div>
-
-            <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end">
-              <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors" onClick={() => setShowDocPromptModal(false)}>
-                Cancel Actions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+function Row({ label, value, mono }) {
+  return (
+    <div>
+      <p className="text-xs text-zinc-400">{label}</p>
+      <p className={`text-sm font-medium text-zinc-800 ${mono ? 'font-mono' : ''}`}>{value}</p>
     </div>
   );
 }
